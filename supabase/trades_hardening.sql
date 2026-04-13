@@ -9,7 +9,7 @@
 --   4. Replace them with a SECURITY DEFINER RPC (confirm_trade) that:
 --        a. Verifies caller is a conversation participant
 --        b. Requires both parties to have sent at least one message
---        c. Enforces a 7-day cooldown — one ratable trade per pair per week
+--        c. Enforces an 8-hour cooldown — one ratable trade per pair per 8 hours
 --        d. Only sets the CALLER'S confirmation flag (can't flip partner's)
 --        e. Sets completed_at server-side when both confirmed (client can't forge it)
 --   5. Harden ratings_insert RLS to verify:
@@ -22,14 +22,22 @@
 -- ── 1. Table-level constraints ──────────────────────────────────────────────
 
 -- No self-trading (also blocks bot accounts messaging themselves)
-ALTER TABLE trades
-  ADD CONSTRAINT IF NOT EXISTS trades_no_self_trade
-  CHECK (party_one != party_two);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'trades_no_self_trade'
+  ) THEN
+    ALTER TABLE trades ADD CONSTRAINT trades_no_self_trade CHECK (party_one != party_two);
+  END IF;
+END $$;
 
 -- No self-rating (belt + suspenders — RLS also blocks this)
-ALTER TABLE trade_ratings
-  ADD CONSTRAINT IF NOT EXISTS ratings_no_self_rate
-  CHECK (rater_id != rated_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'ratings_no_self_rate'
+  ) THEN
+    ALTER TABLE trade_ratings ADD CONSTRAINT ratings_no_self_rate CHECK (rater_id != rated_id);
+  END IF;
+END $$;
 
 
 -- ── 2. Drop the permissive client-side policies ─────────────────────────────
