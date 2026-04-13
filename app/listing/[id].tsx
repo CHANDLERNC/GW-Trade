@@ -261,7 +261,7 @@ export default function ListingDetailScreen() {
                 </Text>
               </View>
               <View style={styles.sellerNameWrap}>
-                <Text style={styles.sellerUsername}>
+                <Text style={styles.sellerUsername} numberOfLines={1}>
                   {listing.profiles?.display_name ?? listing.profiles?.username ?? 'Unknown'}
                 </Text>
                 <MemberIcon
@@ -403,8 +403,8 @@ function createStyles(c: ThemeColors) {
       alignItems: 'center', justifyContent: 'center',
     },
     sellerAvatarText: { fontSize: Typography.sizes.lg, fontWeight: Typography.weights.bold, color: c.text },
-    sellerNameWrap: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' },
-    sellerUsername: { fontSize: Typography.sizes.md, fontWeight: Typography.weights.semibold, color: c.text },
+    sellerNameWrap: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexShrink: 1 },
+    sellerUsername: { fontSize: Typography.sizes.md, fontWeight: Typography.weights.semibold, color: c.text, flexShrink: 1 },
     commentsSection: { gap: Spacing.md },
     commentsLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold, color: c.textMuted, letterSpacing: 1.5 },
     commentsSubtitle: { fontSize: Typography.sizes.sm, color: c.textMuted, marginTop: -Spacing.sm },

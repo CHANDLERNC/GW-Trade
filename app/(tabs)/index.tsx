@@ -135,7 +135,12 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerNameRow}>
-            <Text style={[styles.username, { color: nameColor }]}>{displayName}</Text>
+            <Text
+              style={[styles.username, { color: nameColor }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >{displayName}</Text>
             <MemberIcon
               isLifetime={profile?.is_lifetime_member}
               isMember={profile?.is_member}
@@ -396,7 +401,7 @@ function createStyles(c: ThemeColors) {
       letterSpacing: 1,
       paddingBottom: 6,
     },
-    headerNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    headerNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexShrink: 1 },
     username: {
       fontSize: Typography.sizes.xxl,
       fontWeight: Typography.weights.bold,

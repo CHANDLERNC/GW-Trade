@@ -26,6 +26,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useListings } from '@/hooks/useListings';
 import { authService } from '@/services/auth.service';
 import { MembershipModal } from '@/components/ui/MembershipModal';
+import { SupportModal } from '@/components/ui/SupportModal';
 import { MemberIcon } from '@/components/ui/MemberIcon';
 import { FACTION_LIST } from '@/constants/factions';
 import { MEMBERSHIP } from '@/constants/membership';
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [membershipModalVisible, setMembershipModalVisible] = useState(false);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editBio, setEditBio] = useState('');
@@ -92,7 +94,6 @@ export default function ProfileScreen() {
   };
 
   const displayName = profile?.display_name ?? profile?.username ?? '—';
-  const initial = displayName[0]?.toUpperCase() ?? '?';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -106,28 +107,31 @@ export default function ProfileScreen() {
       >
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatarRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initial}</Text>
+          <View style={styles.nameRow}>
+            <View style={styles.nameBlock}>
+              <View style={styles.displayNameRow}>
+                <Text
+                  style={[styles.displayName, { color: resolveNameColor(profile?.display_name_color) }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.65}
+                >
+                  {displayName}
+                </Text>
+                <MemberIcon
+                  isLifetime={profile?.is_lifetime_member}
+                  isMember={profile?.is_member}
+                  isEarlyAdopter={profile?.is_early_adopter}
+                  size={26}
+                />
+              </View>
+              <Text style={styles.username} numberOfLines={1}>@{profile?.username}</Text>
             </View>
             <TouchableOpacity style={styles.editBtn} onPress={openEditModal} activeOpacity={0.75}>
               <Ionicons name="pencil" size={16} color={colors.textSecondary} />
               <Text style={styles.editBtnText}>Edit</Text>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.displayNameRow}>
-            <Text style={[styles.displayName, { color: resolveNameColor(profile?.display_name_color) }]}>
-              {displayName}
-            </Text>
-            <MemberIcon
-              isLifetime={profile?.is_lifetime_member}
-              isMember={profile?.is_member}
-              isEarlyAdopter={profile?.is_early_adopter}
-              size={20}
-            />
-          </View>
-          <Text style={styles.username}>@{profile?.username}</Text>
 
           {profile?.faction_preference && (
             <FactionBadge faction={profile.faction_preference} size="md" style={styles.factionBadge} />
@@ -272,9 +276,26 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.signOutSection}>
+          {profile?.is_admin && (
+            <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/tickets')} activeOpacity={0.75}>
+              <Ionicons name="shield-checkmark" size={18} color={colors.accent} />
+              <Text style={styles.adminBtnText}>Admin · Support Tickets</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.supportBtn} onPress={() => setSupportModalVisible(true)} activeOpacity={0.75}>
+            <Ionicons name="headset-outline" size={18} color={colors.textSecondary} />
+            <Text style={styles.supportBtnText}>Contact Support</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
           <Button title="Sign Out" variant="danger" onPress={handleSignOut} fullWidth />
         </View>
       </ScrollView>
+
+      <SupportModal
+        visible={supportModalVisible}
+        onClose={() => setSupportModalVisible(false)}
+      />
 
       <MembershipModal
         visible={membershipModalVisible}
@@ -313,8 +334,8 @@ export default function ProfileScreen() {
                 </View>
               )}
 
-              <Input label="Username" value={editUsername} onChangeText={setEditUsername} autoCapitalize="none" autoCorrect={false} />
-              <Input label="Display Name" value={editDisplayName} onChangeText={setEditDisplayName} placeholder="Optional display name" />
+              <Input label="Username" value={editUsername} onChangeText={setEditUsername} autoCapitalize="none" autoCorrect={false} maxLength={20} />
+              <Input label="Display Name" value={editDisplayName} onChangeText={setEditDisplayName} placeholder="Optional display name" maxLength={30} />
               <Input label="Bio" value={editBio} onChangeText={setEditBio} placeholder="A few words about yourself..." multiline numberOfLines={3} style={styles.multiline} />
 
               <View>
@@ -385,13 +406,8 @@ function createStyles(c: ThemeColors) {
       borderBottomWidth: 1,
       borderBottomColor: c.surfaceBorder,
     },
-    avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
-    avatar: {
-      width: 72, height: 72, borderRadius: 36,
-      backgroundColor: c.surfaceElevated, borderWidth: 2, borderColor: c.surfaceBorder,
-      alignItems: 'center', justifyContent: 'center',
-    },
-    avatarText: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold, color: c.text },
+    nameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
+    nameBlock: { flex: 1, gap: 4, marginRight: Spacing.md },
     editBtn: {
       flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
       backgroundColor: c.surface, borderRadius: BorderRadius.full,
@@ -399,9 +415,9 @@ function createStyles(c: ThemeColors) {
       paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, marginTop: Spacing.xs,
     },
     editBtnText: { fontSize: Typography.sizes.sm, color: c.textSecondary, fontWeight: Typography.weights.medium },
-    displayNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    displayName: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold, color: c.text },
-    username: { fontSize: Typography.sizes.md, color: c.textSecondary, marginTop: 2 },
+    displayNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
+    displayName: { fontSize: Typography.sizes.xxxl, fontWeight: Typography.weights.bold, color: c.text },
+    username: { fontSize: Typography.sizes.lg, color: c.textSecondary },
     factionBadge: { marginTop: Spacing.sm },
     bio: { fontSize: Typography.sizes.md, color: c.textSecondary, lineHeight: 22, marginTop: Spacing.md },
     memberSince: { fontSize: Typography.sizes.xs, color: c.textMuted, marginTop: Spacing.md },
@@ -482,7 +498,41 @@ function createStyles(c: ThemeColors) {
       color: c.accent,
       fontWeight: Typography.weights.medium,
     },
-    signOutSection: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl },
+    signOutSection: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl, gap: Spacing.sm },
+    adminBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      backgroundColor: c.accent + '12',
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.accent + '44',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+    },
+    adminBtnText: {
+      flex: 1,
+      fontSize: Typography.sizes.md,
+      color: c.accent,
+      fontWeight: Typography.weights.semibold,
+    },
+    supportBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+    },
+    supportBtnText: {
+      flex: 1,
+      fontSize: Typography.sizes.md,
+      color: c.textSecondary,
+      fontWeight: Typography.weights.medium,
+    },
     // Modal
     modal: { flex: 1, backgroundColor: c.background },
     modalScroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },

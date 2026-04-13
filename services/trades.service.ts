@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { notificationsService } from '@/services/notifications.service';
 import { Trade, TradeRating } from '@/types';
 
 // Maps Postgres exception messages from confirm_trade RPC → user-facing strings
@@ -33,6 +35,7 @@ export const tradesService = {
   //   - Sets completed_at server-side (client can't forge it)
   async markComplete(
     conversationId: string,
+    confirmingUserId: string,
   ): Promise<{ data: Trade | null; error: Error | null }> {
     const { data, error } = await supabase.rpc('confirm_trade', {
       p_conversation_id: conversationId,
@@ -47,6 +50,12 @@ export const tradesService = {
 
     // RPC returns SETOF trades — first row is our updated trade
     const trade = Array.isArray(data) ? (data[0] as Trade ?? null) : (data as Trade | null);
+
+    if (trade) {
+      // Fire-and-forget — never block on notification failure
+      notifyTradePartner(trade, confirmingUserId).catch(() => {});
+    }
+
     return { data: trade, error: null };
   },
 
@@ -66,7 +75,44 @@ export const tradesService = {
       .insert({ trade_id: tradeId, rater_id: raterId, rated_id: ratedId, is_positive: isPositive })
       .select()
       .single();
+
+    if (!error) {
+      // Fire-and-forget — never block on notification failure
+      notifyRatedPlayer(raterId, ratedId, isPositive).catch(() => {});
+    }
+
     return { data: data ?? null, error: error as Error | null };
+  },
+
+  // Subscribe to INSERT and UPDATE on the trade row for this conversation.
+  // Fires callback whenever the other party confirms, so the banner updates live.
+  subscribeToTrade(
+    conversationId: string,
+    callback: (trade: Trade) => void,
+  ): RealtimeChannel {
+    return supabase
+      .channel(`trade:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trades',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => callback(payload.new as Trade),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'trades',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => callback(payload.new as Trade),
+      )
+      .subscribe();
   },
 
   // Check if the current user has already rated this trade
@@ -80,3 +126,51 @@ export const tradesService = {
     return data ?? null;
   },
 };
+
+// Internal helper — notify the other party when a trade confirmation changes state
+async function notifyTradePartner(trade: Trade, confirmingUserId: string) {
+  const partnerId = trade.party_one === confirmingUserId ? trade.party_two : trade.party_one;
+  if (!partnerId) return;
+
+  const [{ data: confirmer }, { data: partner }] = await Promise.all([
+    supabase.from('profiles').select('username').eq('id', confirmingUserId).single(),
+    supabase.from('profiles').select('push_token').eq('id', partnerId).single(),
+  ]);
+
+  if (!partner?.push_token) return;
+
+  const name = confirmer?.username ?? 'Your trade partner';
+
+  if (trade.completed_at) {
+    await notificationsService.sendPushNotification(
+      partner.push_token,
+      'Trade Complete!',
+      `${name} confirmed the trade. You can now leave a rating.`,
+    );
+  } else {
+    await notificationsService.sendPushNotification(
+      partner.push_token,
+      'Trade Confirmation Pending',
+      `${name} has confirmed the trade — tap to confirm your side.`,
+    );
+  }
+}
+
+// Internal helper — notify the rated player when someone leaves a trade rating
+async function notifyRatedPlayer(raterId: string, ratedId: string, isPositive: boolean) {
+  const [{ data: rater }, { data: rated }] = await Promise.all([
+    supabase.from('profiles').select('username').eq('id', raterId).single(),
+    supabase.from('profiles').select('push_token').eq('id', ratedId).single(),
+  ]);
+
+  if (!rated?.push_token) return;
+
+  const name = rater?.username ?? 'A trader';
+  const sentiment = isPositive ? 'positive' : 'negative';
+
+  await notificationsService.sendPushNotification(
+    rated.push_token,
+    'New Trade Rating',
+    `${name} left you a ${sentiment} trade rating.`,
+  );
+}

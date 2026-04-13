@@ -98,7 +98,6 @@ export default function PublicProfileScreen() {
   }
 
   const displayName = profile.display_name ?? profile.username;
-  const initial = displayName[0]?.toUpperCase() ?? '?';
   const totalRatings = (profile.ratings_positive ?? 0) + (profile.ratings_negative ?? 0);
   const positivePct = totalRatings > 0
     ? Math.round((profile.ratings_positive / totalRatings) * 100)
@@ -116,12 +115,27 @@ export default function PublicProfileScreen() {
       >
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatarRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initial}</Text>
+          <View style={styles.nameRow}>
+            <View style={styles.nameBlock}>
+              <View style={styles.displayNameRow}>
+                <Text
+                  style={[styles.displayName, { color: resolveNameColor(profile.display_name_color) }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.65}
+                >
+                  {displayName}
+                </Text>
+                <MemberIcon
+                  isLifetime={profile.is_lifetime_member}
+                  isMember={profile.is_member}
+                  isEarlyAdopter={profile.is_early_adopter}
+                  size={26}
+                />
+              </View>
+              <Text style={styles.username} numberOfLines={1}>@{profile.username}</Text>
             </View>
 
-            {/* Message button — only for other users */}
             {!isOwnProfile && (
               <TouchableOpacity
                 style={styles.messageBtn}
@@ -152,19 +166,6 @@ export default function PublicProfileScreen() {
             )}
           </View>
 
-          <View style={styles.displayNameRow}>
-            <Text style={[styles.displayName, { color: resolveNameColor(profile.display_name_color) }]}>
-              {displayName}
-            </Text>
-            <MemberIcon
-              isLifetime={profile.is_lifetime_member}
-              isMember={profile.is_member}
-              isEarlyAdopter={profile.is_early_adopter}
-              size={20}
-            />
-          </View>
-          <Text style={styles.username}>@{profile.username}</Text>
-
           {profile.faction_preference && (
             <FactionBadge faction={profile.faction_preference} size="md" style={styles.factionBadge} />
           )}
@@ -185,10 +186,19 @@ export default function PublicProfileScreen() {
             <Text style={styles.statValue}>{listings.length}</Text>
             <Text style={styles.statLabel}>Active</Text>
           </View>
+          <View style={styles.statDivider} />
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{profile.trades_completed ?? 0}</Text>
             <Text style={styles.statLabel}>Trades</Text>
           </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBox}>
+            <Text style={[styles.statValue, { color: colors.success }]}>
+              {profile.ratings_positive ?? 0}
+            </Text>
+            <Text style={styles.statLabel}>Positive</Text>
+          </View>
+          <View style={styles.statDivider} />
           <View style={styles.statBox}>
             <Text style={[styles.statValue, positivePct !== null && { color: positivePct >= 80 ? colors.success : positivePct >= 60 ? colors.warning : colors.danger }]}>
               {positivePct !== null ? `${positivePct}%` : '—'}
@@ -290,28 +300,18 @@ function createStyles(c: ThemeColors) {
     // Profile card
     profileCard: {
       paddingHorizontal: Spacing.lg,
-      paddingTop: Spacing.md,
+      paddingTop: Spacing.lg,
       paddingBottom: Spacing.xl,
       borderBottomWidth: 1,
       borderBottomColor: c.surfaceBorder,
     },
-    avatarRow: {
+    nameRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
       marginBottom: Spacing.md,
     },
-    avatar: {
-      width: 72, height: 72, borderRadius: 36,
-      backgroundColor: c.surfaceElevated,
-      borderWidth: 2, borderColor: c.surfaceBorder,
-      alignItems: 'center', justifyContent: 'center',
-    },
-    avatarText: {
-      fontSize: Typography.sizes.xxl,
-      fontWeight: Typography.weights.bold,
-      color: c.text,
-    },
+    nameBlock: { flex: 1, gap: 4, marginRight: Spacing.md },
     messageBtn: {
       flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
       backgroundColor: c.accent + '18',
@@ -339,13 +339,13 @@ function createStyles(c: ThemeColors) {
       color: c.textSecondary,
       fontWeight: Typography.weights.medium,
     },
-    displayNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    displayNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
     displayName: {
-      fontSize: Typography.sizes.xl,
+      fontSize: Typography.sizes.xxxl,
       fontWeight: Typography.weights.bold,
       color: c.text,
     },
-    username: { fontSize: Typography.sizes.md, color: c.textSecondary, marginTop: 2 },
+    username: { fontSize: Typography.sizes.lg, color: c.textSecondary },
     factionBadge: { marginTop: Spacing.sm },
     bio: {
       fontSize: Typography.sizes.md,
@@ -364,6 +364,12 @@ function createStyles(c: ThemeColors) {
     statBox: {
       flex: 1, alignItems: 'center',
       paddingVertical: Spacing.lg, gap: Spacing.xs,
+    },
+    statDivider: {
+      width: 1,
+      height: 32,
+      backgroundColor: c.surfaceBorder,
+      alignSelf: 'center',
     },
     statValue: {
       fontSize: Typography.sizes.xxl,

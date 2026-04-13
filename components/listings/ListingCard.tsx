@@ -74,7 +74,7 @@ export function ListingCard({ listing }: ListingCardProps) {
               {(listing.profiles?.username ?? '?')[0].toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.username}>{listing.profiles?.username ?? 'Unknown'}</Text>
+          <Text style={styles.username} numberOfLines={1}>{listing.profiles?.username ?? 'Unknown'}</Text>
           <MemberIcon
             isLifetime={listing.profiles?.is_lifetime_member}
             isMember={listing.profiles?.is_member}
@@ -208,6 +208,7 @@ function createStyles(c: ThemeColors) {
     username: {
       fontSize: Typography.sizes.sm,
       color: c.textSecondary,
+      flexShrink: 1,
     },
     qty: {
       fontSize: Typography.sizes.xs,

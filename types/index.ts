@@ -47,8 +47,20 @@ export interface Profile {
   trades_completed: number;
   ratings_positive: number;
   ratings_negative: number;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  user_id: string | null;
+  category: 'bug' | 'feature' | 'content' | 'other';
+  message: string;
+  status: 'open' | 'resolved';
+  created_at: string;
+  // joined
+  profiles?: { username: string; display_name: string | null } | null;
 }
 
 export interface Trade {

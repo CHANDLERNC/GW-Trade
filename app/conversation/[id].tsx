@@ -114,6 +114,20 @@ export default function ConversationScreen() {
 
   useEffect(() => { loadTrade(); }, [loadTrade]);
 
+  // Keep trade state live — fires when partner confirms or trade completes
+  useEffect(() => {
+    if (!id || !user) return;
+    const channel = tradesService.subscribeToTrade(id, async (updated) => {
+      setTrade(updated);
+      if (updated.completed_at) {
+        const myRating = await tradesService.getMyRating(updated.id, user.id);
+        if (!myRating) setRatingModalVisible(true);
+        else setMyRatingSubmitted(true);
+      }
+    });
+    return () => { channel.unsubscribe(); };
+  }, [id, user]);
+
   useEffect(() => {
     if (id && user) messagesService.markAsRead(id, user.id);
   }, [id, user, messages.length]);
@@ -152,7 +166,7 @@ export default function ConversationScreen() {
           text: 'Confirm',
           onPress: async () => {
             setTradeLoading(true);
-            const { data, error } = await tradesService.markComplete(id);
+            const { data, error } = await tradesService.markComplete(id, user.id);
             setTradeLoading(false);
             if (error) {
               Alert.alert('Cannot Confirm Trade', error.message);

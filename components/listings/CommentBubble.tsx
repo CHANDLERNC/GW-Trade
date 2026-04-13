@@ -38,7 +38,7 @@ export function CommentBubble({ comment, isOwn, isListingOwner, onDelete }: Comm
       <View style={styles.commentBody}>
         <View style={styles.commentMeta}>
           <View style={styles.commentNameRow}>
-            <Text style={[styles.commentUsername, { color: nameColor }]}>{name}</Text>
+            <Text style={[styles.commentUsername, { color: nameColor }]} numberOfLines={1}>{name}</Text>
             <MemberIcon
               isLifetime={comment.profiles?.is_lifetime_member}
               isMember={comment.profiles?.is_member}
@@ -79,8 +79,8 @@ function createStyles(c: ThemeColors) {
       padding: Spacing.sm, gap: Spacing.xs,
     },
     commentMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    commentNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    commentUsername: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold },
+    commentNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
+    commentUsername: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold, flexShrink: 1 },
     commentTime: { fontSize: Typography.sizes.xs, color: c.textMuted },
     commentContent: { fontSize: Typography.sizes.sm, color: c.text, lineHeight: 20 },
     deleteBtn: { paddingTop: Spacing.xs, flexShrink: 0 },
