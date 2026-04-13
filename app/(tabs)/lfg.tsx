@@ -19,18 +19,24 @@ import { LFGCard } from '@/components/lfg/LFGCard';
 import { CreateLFGSheet } from '@/components/lfg/CreateLFGSheet';
 import { lfgService, lfgPostDurationHours } from '@/services/lfg.service';
 import { FACTION_LIST } from '@/constants/factions';
-import { FactionSlug, LFGFilters, LFGRole, LFGRegion, LFGPost } from '@/types';
+import { FactionSlug, LFGFilters, LFGZone, LFGRegion, LFGPost } from '@/types';
 
 type FactionFilter = FactionSlug | 'all';
-type RoleFilter = LFGRole | 'all';
+type ZoneFilter = LFGZone | 'all';
 
-const ROLE_CHIPS: { id: RoleFilter; label: string }[] = [
-  { id: 'all', label: 'All Roles' },
-  { id: 'rifleman', label: 'Rifleman' },
-  { id: 'medic', label: 'Medic' },
-  { id: 'recon', label: 'Recon' },
-  { id: 'support', label: 'Support' },
-  { id: 'any', label: 'Flexible' },
+const ZONE_CHIPS: { id: ZoneFilter; label: string }[] = [
+  { id: 'all', label: 'All Zones' },
+  { id: 'pha_lang', label: 'Pha Lang' },
+  { id: 'nam_thaven', label: 'Nam Thaven' },
+  { id: 'kiu_vongsa', label: 'Kiu Vongsa' },
+  { id: 'ybl_1', label: 'YBL-1' },
+  { id: 'ban_pa', label: 'Ban Pa' },
+  { id: 'fort_narith', label: 'Fort Narith' },
+  { id: 'midnight_sapphire', label: 'Midnight Sapphire' },
+  { id: 'tiger_bay', label: 'Tiger Bay' },
+  { id: 'hunters_paradise', label: "Hunter's Paradise" },
+  { id: 'falng_airfield', label: 'F.A.L.N.G. Airfield' },
+  { id: 'any', label: 'Any Zone' },
 ];
 
 export default function LFGScreen() {
@@ -40,12 +46,12 @@ export default function LFGScreen() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [factionFilter, setFactionFilter] = useState<FactionFilter>('all');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [zoneFilter, setZoneFilter] = useState<ZoneFilter>('all');
 
   const filters: LFGFilters = useMemo(() => ({
     faction: factionFilter === 'all' ? undefined : factionFilter,
-    role: roleFilter === 'all' ? undefined : roleFilter,
-  }), [factionFilter, roleFilter]);
+    zone: zoneFilter === 'all' ? undefined : zoneFilter,
+  }), [factionFilter, zoneFilter]);
 
   const { posts, loading, refreshing, refetch, removePost, prependPost } = useLFG(filters);
 
@@ -61,7 +67,7 @@ export default function LFGScreen() {
 
   const handleSubmit = useCallback(async (form: {
     faction: FactionSlug;
-    role: LFGRole;
+    zone: LFGZone;
     region: LFGRegion;
     slots_total: number;
     description?: string;
@@ -168,22 +174,22 @@ export default function LFGScreen() {
         </ScrollView>
       </View>
 
-      {/* Role filter */}
+      {/* Zone filter */}
       <View style={styles.filterSection}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterScroll}
         >
-          {ROLE_CHIPS.map((r) => (
+          {ZONE_CHIPS.map((z) => (
             <TouchableOpacity
-              key={r.id}
-              style={[styles.chip, roleFilter === r.id && styles.chipActive]}
-              onPress={() => setRoleFilter(r.id)}
+              key={z.id}
+              style={[styles.chip, zoneFilter === z.id && styles.chipActive]}
+              onPress={() => setZoneFilter(z.id)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.chipText, roleFilter === r.id && styles.chipTextActive]}>
-                {r.label}
+              <Text style={[styles.chipText, zoneFilter === z.id && styles.chipTextActive]}>
+                {z.label}
               </Text>
             </TouchableOpacity>
           ))}

@@ -16,14 +16,22 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemeColors, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { FACTIONS, FACTION_LIST } from '@/constants/factions';
-import { FactionSlug, LFGRole, LFGRegion, LFGPost } from '@/types';
+import { FactionSlug, LFGZone, LFGRegion, LFGPost } from '@/types';
 
-const ROLES: { id: LFGRole; label: string; icon: string }[] = [
-  { id: 'any', label: 'Any Role', icon: 'people' },
-  { id: 'rifleman', label: 'Rifleman', icon: 'shield' },
-  { id: 'medic', label: 'Medic', icon: 'medkit' },
-  { id: 'recon', label: 'Recon', icon: 'eye' },
-  { id: 'support', label: 'Support', icon: 'radio' },
+const ZONES: { id: LFGZone; label: string; icon: string; subtitle?: string }[] = [
+  { id: 'any', label: 'Any Zone', icon: 'map' },
+  // Faction Starter Towns
+  { id: 'pha_lang', label: 'Pha Lang', icon: 'home', subtitle: 'LRI' },
+  { id: 'nam_thaven', label: 'Nam Thaven', icon: 'home', subtitle: 'MSS' },
+  { id: 'kiu_vongsa', label: 'Kiu Vongsa', icon: 'home', subtitle: 'CSI' },
+  // Major Shared POIs
+  { id: 'ybl_1', label: 'YBL-1', icon: 'layers' },
+  { id: 'ban_pa', label: 'Ban Pa', icon: 'people' },
+  { id: 'fort_narith', label: 'Fort Narith', icon: 'shield' },
+  { id: 'midnight_sapphire', label: 'Midnight Sapphire', icon: 'diamond' },
+  { id: 'tiger_bay', label: 'Tiger Bay', icon: 'warning' },
+  { id: 'hunters_paradise', label: "Hunter's Paradise", icon: 'compass' },
+  { id: 'falng_airfield', label: 'F.A.L.N.G. Airfield', icon: 'airplane' },
 ];
 
 const REGIONS: LFGRegion[] = ['NA East', 'NA West', 'EU', 'Asia', 'OCE', 'SA'];
@@ -33,7 +41,7 @@ interface Props {
   onClose: () => void;
   onSubmit: (post: {
     faction: FactionSlug;
-    role: LFGRole;
+    zone: LFGZone;
     region: LFGRegion;
     slots_total: number;
     description?: string;
@@ -48,7 +56,7 @@ export function CreateLFGSheet({ visible, onClose, onSubmit, initialFaction, pos
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [faction, setFaction] = useState<FactionSlug>(initialFaction ?? 'lri');
-  const [role, setRole] = useState<LFGRole>('any');
+  const [zone, setZone] = useState<LFGZone>('any');
   const [region, setRegion] = useState<LFGRegion>('NA East');
   const [slots, setSlots] = useState(4);
   const [description, setDescription] = useState('');
@@ -57,10 +65,10 @@ export function CreateLFGSheet({ visible, onClose, onSubmit, initialFaction, pos
 
   async function handleSubmit() {
     setSubmitting(true);
-    await onSubmit({ faction, role, region, slots_total: slots, description, mic_required: micRequired });
+    await onSubmit({ faction, zone, region, slots_total: slots, description, mic_required: micRequired });
     setSubmitting(false);
     // Reset form
-    setRole('any');
+    setZone('any');
     setRegion('NA East');
     setSlots(4);
     setDescription('');
@@ -125,27 +133,32 @@ export function CreateLFGSheet({ visible, onClose, onSubmit, initialFaction, pos
               })}
             </View>
 
-            {/* Role */}
-            <Text style={styles.sectionLabel}>Looking to Play As</Text>
+            {/* Zone */}
+            <Text style={styles.sectionLabel}>Zone</Text>
             <View style={styles.chipRow}>
-              {ROLES.map((r) => {
-                const active = role === r.id;
+              {ZONES.map((z) => {
+                const active = zone === z.id;
                 return (
                   <TouchableOpacity
-                    key={r.id}
+                    key={z.id}
                     style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => setRole(r.id)}
+                    onPress={() => setZone(z.id)}
                     activeOpacity={0.75}
                   >
                     <Ionicons
-                      name={r.icon as any}
+                      name={z.icon as any}
                       size={12}
                       color={active ? colors.accent : colors.textMuted}
                       style={{ marginRight: 4 }}
                     />
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                      {r.label}
+                      {z.label}
                     </Text>
+                    {z.subtitle && (
+                      <Text style={[styles.chipSubtitle, active && { color: colors.accent + 'AA' }]}>
+                        {' '}{z.subtitle}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -383,6 +396,11 @@ function createStyles(c: ThemeColors) {
     chipTextActive: {
       color: c.accent,
       fontWeight: Typography.weights.bold,
+    },
+    chipSubtitle: {
+      fontSize: 9,
+      color: c.textMuted,
+      fontWeight: Typography.weights.medium,
     },
     slotRow: {
       flexDirection: 'row',

@@ -22,8 +22,8 @@ export const lfgService = {
     if (filters.faction && filters.faction !== 'all') {
       query = query.eq('faction', filters.faction);
     }
-    if (filters.role && filters.role !== 'all') {
-      query = query.eq('role', filters.role);
+    if (filters.zone && filters.zone !== 'all') {
+      query = query.eq('zone', filters.zone);
     }
     if (filters.region && filters.region !== 'all') {
       query = query.eq('region', filters.region);
@@ -37,7 +37,7 @@ export const lfgService = {
     userId: string,
     post: {
       faction: LFGPost['faction'];
-      role: LFGPost['role'];
+      zone: LFGPost['zone'];
       region: LFGPost['region'];
       slots_total: number;
       description?: string;
@@ -61,7 +61,7 @@ export const lfgService = {
       .insert({
         user_id: userId,
         faction: post.faction,
-        role: post.role,
+        zone: post.zone,
         region: post.region,
         slots_total: post.slots_total,
         description: post.description?.trim() || null,

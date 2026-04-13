@@ -12,24 +12,36 @@ import { ThemeColors, Typography, Spacing, BorderRadius } from '@/constants/them
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { FACTIONS } from '@/constants/factions';
-import { LFGPost, LFGRole } from '@/types';
+import { LFGPost, LFGZone } from '@/types';
 import { messagesService } from '@/services/messages.service';
 import { useState } from 'react';
 
-const ROLE_LABELS: Record<LFGRole, string> = {
-  any: 'Any Role',
-  rifleman: 'Rifleman',
-  medic: 'Medic',
-  recon: 'Recon',
-  support: 'Support',
+const ZONE_LABELS: Record<LFGZone, string> = {
+  any: 'Any Zone',
+  pha_lang: 'Pha Lang',
+  nam_thaven: 'Nam Thaven',
+  kiu_vongsa: 'Kiu Vongsa',
+  ybl_1: 'YBL-1',
+  ban_pa: 'Ban Pa',
+  fort_narith: 'Fort Narith',
+  midnight_sapphire: 'Midnight Sapphire',
+  tiger_bay: 'Tiger Bay',
+  hunters_paradise: "Hunter's Paradise",
+  falng_airfield: 'F.A.L.N.G. Airfield',
 };
 
-const ROLE_ICONS: Record<LFGRole, string> = {
-  any: 'people',
-  rifleman: 'shield',
-  medic: 'medkit',
-  recon: 'eye',
-  support: 'radio',
+const ZONE_ICONS: Record<LFGZone, string> = {
+  any: 'map',
+  pha_lang: 'home',
+  nam_thaven: 'home',
+  kiu_vongsa: 'home',
+  ybl_1: 'layers',
+  ban_pa: 'people',
+  fort_narith: 'shield',
+  midnight_sapphire: 'diamond',
+  tiger_bay: 'warning',
+  hunters_paradise: 'compass',
+  falng_airfield: 'airplane',
 };
 
 function timeAgo(iso: string): string {
@@ -95,12 +107,12 @@ export function LFGCard({ post, onClose }: Props) {
         <View style={styles.tagsRow}>
           <View style={styles.tag}>
             <Ionicons
-              name={ROLE_ICONS[post.role] as any}
+              name={ZONE_ICONS[post.zone] as any}
               size={11}
               color={colors.accent}
               style={{ marginRight: 3 }}
             />
-            <Text style={styles.tagText}>{ROLE_LABELS[post.role]}</Text>
+            <Text style={styles.tagText}>{ZONE_LABELS[post.zone]}</Text>
           </View>
 
           <View style={styles.tag}>

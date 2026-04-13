@@ -118,14 +118,25 @@ export type ListingFilters = {
 };
 
 // ── LFG ───────────────────────────────────────────────────────────────────────
-export type LFGRole = 'any' | 'rifleman' | 'medic' | 'recon' | 'support';
+export type LFGZone =
+  | 'any'
+  | 'pha_lang'
+  | 'nam_thaven'
+  | 'kiu_vongsa'
+  | 'ybl_1'
+  | 'ban_pa'
+  | 'fort_narith'
+  | 'midnight_sapphire'
+  | 'tiger_bay'
+  | 'hunters_paradise'
+  | 'falng_airfield';
 export type LFGRegion = 'NA East' | 'NA West' | 'EU' | 'Asia' | 'OCE' | 'SA';
 
 export interface LFGPost {
   id: string;
   user_id: string;
   faction: FactionSlug;
-  role: LFGRole;
+  zone: LFGZone;
   region: LFGRegion;
   slots_total: number;
   description: string | null;
@@ -138,6 +149,6 @@ export interface LFGPost {
 
 export type LFGFilters = {
   faction?: FactionSlug | 'all';
-  role?: LFGRole | 'all';
+  zone?: LFGZone | 'all';
   region?: LFGRegion | 'all';
 };

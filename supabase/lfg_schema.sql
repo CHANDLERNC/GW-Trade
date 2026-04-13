@@ -7,8 +7,8 @@ create table public.lfg_posts (
   id            uuid default gen_random_uuid() primary key,
   user_id       uuid references public.profiles(id) on delete cascade not null,
   faction       text not null check (faction in ('lri', 'mss', 'csi')),
-  role          text not null default 'any'
-                  check (role in ('any', 'rifleman', 'medic', 'recon', 'support')),
+  zone          text not null default 'any'
+                  check (zone in ('any', 'pha_lang', 'nam_thaven', 'kiu_vongsa', 'ybl_1', 'ban_pa', 'fort_narith', 'midnight_sapphire', 'tiger_bay', 'hunters_paradise', 'falng_airfield')),
   region        text not null default 'NA East'
                   check (region in ('NA East', 'NA West', 'EU', 'Asia', 'OCE', 'SA')),
   slots_total   int not null default 4 check (slots_total between 2 and 4),
@@ -35,3 +35,14 @@ create policy "Users can delete their own LFG posts"
 
 -- Enable Realtime for live updates on the LFG board
 alter publication supabase_realtime add table public.lfg_posts;
+
+-- ============================================================
+-- Migration: rename role → zone and update to real GZW map zones
+-- Run this if the table already exists in your Supabase project
+-- ============================================================
+-- alter table public.lfg_posts rename column role to zone;
+-- alter table public.lfg_posts drop constraint lfg_posts_role_check;
+-- alter table public.lfg_posts drop constraint if exists lfg_posts_zone_check;
+-- update public.lfg_posts set zone = 'any';
+-- alter table public.lfg_posts add constraint lfg_posts_zone_check
+--   check (zone in ('any', 'pha_lang', 'nam_thaven', 'kiu_vongsa', 'ybl_1', 'ban_pa', 'fort_narith', 'midnight_sapphire', 'tiger_bay', 'hunters_paradise', 'falng_airfield'));
