@@ -1,51 +1,129 @@
-# GZW Market
+# CLAUDE.md — GZW Market
 
-## Identity
-Expo Router v6 · React Native · TypeScript · Supabase · Windows 11 dev
+AI assistant context for this repo. Read this before touching any code.
 
-## File Map
-| Path | Purpose |
-|------|---------|
-| `constants/theme.ts` | All tokens — ThemeColors, Spacing, Typography, BorderRadius |
-| `context/ThemeContext.tsx` | isDark, colors, toggleTheme → persisted `@gzw_theme` |
-| `context/AuthContext.tsx` | user, session |
-| `app/(tabs)/index.tsx` | Home — clock, status line, faction cards, theme toggle |
-| `app/(tabs)/profile.tsx` | Profile — stats, trader reputation card |
-| `app/conversation/[id].tsx` | Chat — trade banner (4 states) + rating modal |
-| `services/trades.service.ts` | markComplete · submitRating · getMyRating |
-| `components/ui/TradeRatingModal.tsx` | Thumbs up/down bottom sheet |
-| `types/index.ts` | All shared types |
+---
+
+## Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Expo SDK + expo-router v6 (file-based routing) |
+| Language | TypeScript |
+| UI | React Native |
+| Backend | Supabase (Auth · PostgreSQL · Realtime) |
+| Dev OS | Windows 11 |
+
+---
+
+## App Structure
+
+**Tabs** (`app/(tabs)/`): `index` (Home) · `browse` · `create` · `lfg` · `saved` · `inbox` · `profile` · `explore`
+
+**Screens**: `app/listing/[id]` · `app/listing/edit/[id]` · `app/conversation/[id]` · `app/user/[id]` · `app/admin/tickets`
+
+**Auth flow**: `app/(auth)/` → welcome · sign-in · sign-up
+
+---
 
 ## Strict Patterns
+
+### Theme / Styles — no exceptions
 ```ts
-// ALL components — no exceptions
+// Every component must use this pattern
 const styles = useMemo(() => createStyles(colors), [colors]);
-function createStyles(c: ThemeColors) { return StyleSheet.create({ ... }); }
-// Inside factory → c.accent | In JSX → colors.accent
-// Zero hardcoded colors — theme tokens only
+function createStyles(c: ThemeColors) {
+  return StyleSheet.create({ container: { backgroundColor: c.background } });
+}
+// Inside createStyles → c.token  |  In JSX → colors.token
+// ZERO hardcoded hex colors — theme tokens only
 ```
 
-## Theme (dark)
+### Theme Tokens (dark)
 | Token | Value |
 |-------|-------|
-| background | `#09090B` |
-| surface | `#1C1E22` |
-| surfaceElevated | `#262A2F` |
-| surfaceBorder | `#303336` |
-| accent | `#C8A84B` |
-| text | `#DDD9D0` |
-| textSecondary | `#A89F94` |
-| textMuted | `#756F69` |
-| BorderRadius | sm=4 md=8 lg=10 xl=16 |
+| `background` | `#09090B` |
+| `surface` | `#1C1E22` |
+| `surfaceElevated` | `#262A2F` |
+| `surfaceBorder` | `#303336` |
+| `accent` | `#C8A84B` |
+| `text` | `#DDD9D0` |
+| `textSecondary` | `#A89F94` |
+| `textMuted` | `#756F69` |
+| `BorderRadius` | sm=4 md=8 lg=10 xl=16 |
 
-## DB Schema (Supabase)
-- **profiles** — +`trades_completed` +`ratings_positive` +`ratings_negative` (trigger-managed)
-- **trades** — one per conversation · both confirm → `completed_at` set → ratings unlock
-- **trade_ratings** — `UNIQUE(trade_id, rater_id)` · triggers auto-increment profile counters
+Tokens live in `constants/theme.ts` · consumed via `context/ThemeContext.tsx`
 
-## Pending
-- [ ] Map tab — blocked on `assets/images/map.jpg` (user must provide)
+---
+
+## Key Files
+
+| Path | Purpose |
+|------|---------|
+| `types/index.ts` | All shared TypeScript types |
+| `constants/theme.ts` | Theme tokens + `GZW` export |
+| `constants/factions.ts` | LRI · MSS · CSI faction definitions |
+| `constants/membership.ts` | Membership tier config + kill switch |
+| `constants/nameColors.ts` | Display name color palette |
+| `context/AuthContext.tsx` | user · session · profile state |
+| `context/ThemeContext.tsx` | isDark · colors · toggleTheme |
+| `lib/supabase.ts` | Supabase client |
+| `services/*.service.ts` | All data-fetching/mutation logic (never in components) |
+| `hooks/use*.ts` | Data hooks wrapping services |
+| `supabase/schema.sql` | Core DB schema (profiles, listings, conversations, messages) |
+| `supabase/trades.sql` | Trade system schema |
+| `supabase/lfg_schema.sql` | LFG posts schema |
+| `supabase/membership_v2.sql` | Membership/monetization schema |
+
+---
+
+## Business Rules
+
+**Factions:** LRI · MSS · CSI — used for trading zones and display
+
+**LFG post duration by membership tier:**
+- Free → 12 hours · Member → 24 hours · Lifetime → 48 hours
+- One active post per player — creating a new post auto-deactivates the previous one
+
+**Trade system:** One trade per conversation · both parties confirm → `completed_at` set → ratings unlock · `UNIQUE(trade_id, rater_id)` prevents double-rating
+
+**Push notifications:** `hooks/usePushNotifications.ts` + `services/notifications.service.ts`
+
+---
+
+## DB (Supabase)
+
+Key tables: `profiles` · `listings` · `conversations` · `messages` · `trades` · `trade_ratings` · `lfg_posts` · `saved_listings` · `support_tickets`
+
+`profiles` has trigger-managed counters: `trades_completed` · `ratings_positive` · `ratings_negative`
+
+All tables have RLS. Run SQL files in Supabase SQL Editor in schema order when setting up fresh.
+
+---
 
 ## Git
+
 - Remote: `https://github.com/CHANDLERNC/GW-Trade` · branch: `master`
+- `master` is the single source of truth
 - Tagged: `v1.0.0-beta`
+
+---
+
+## AI Assistant Rules
+
+**Do:**
+- Read this file + check file structure with Glob before starting any task
+- Edit existing files rather than creating new ones
+- Keep changes scoped to exactly what was asked
+- Follow the `useMemo(createStyles(colors))` pattern in every component
+
+**Do not:**
+- Hardcode any color values — use theme tokens only
+- Add speculative features, premature abstractions, or "future-proofing"
+- Add docstrings/comments/type annotations to code you didn't change
+- Create helper utilities for one-time operations
+
+**Ask before:**
+- Force pushing, dropping tables, deleting files
+- Architectural changes affecting multiple screens
+- Anything outside the stated task scope
