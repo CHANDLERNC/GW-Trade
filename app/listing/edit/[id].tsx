@@ -4,17 +4,13 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemeColors, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/Button';
@@ -24,23 +20,6 @@ import { useAuth } from '@/context/AuthContext';
 import { CATEGORY_LIST } from '@/constants/categories';
 import { FACTION_LIST } from '@/constants/factions';
 import { Category, FactionSlug, Listing } from '@/types';
-import { supabase } from '@/lib/supabase';
-
-async function uploadImage(uri: string, userId: string): Promise<string | null> {
-  try {
-    const fileName = `${userId}/${Date.now()}.jpg`;
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage
-      .from('listing-images')
-      .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
-    if (error) return null;
-    const { data } = supabase.storage.from('listing-images').getPublicUrl(fileName);
-    return data.publicUrl;
-  } catch {
-    return null;
-  }
-}
 
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,8 +36,6 @@ export default function EditListingScreen() {
   const [quantity, setQuantity] = useState('1');
   const [category, setCategory] = useState<Category | null>(null);
   const [faction, setFaction] = useState<FactionSlug | null>(null);
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -74,21 +51,10 @@ export default function EditListingScreen() {
         setQuantity(String(l.quantity));
         setCategory(l.category);
         setFaction(l.faction);
-        setExistingImageUrl(l.image_url ?? null);
       }
       setLoadingListing(false);
     });
   }, [id]);
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
-  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -105,9 +71,6 @@ export default function EditListingScreen() {
     if (!validate() || !user || !id) return;
     setLoading(true);
 
-    let imageUrl = existingImageUrl;
-    if (imageUri) imageUrl = await uploadImage(imageUri, user.id);
-
     const { error } = await listingsService.updateListing(id, {
       title: title.trim(),
       description: description.trim() || null,
@@ -115,7 +78,7 @@ export default function EditListingScreen() {
       quantity: parseInt(quantity, 10),
       category: category!,
       faction: faction!,
-      image_url: imageUrl,
+      image_url: null,
     });
 
     setLoading(false);
@@ -134,8 +97,6 @@ export default function EditListingScreen() {
     );
   }
 
-  const previewImage = imageUri ?? existingImageUrl;
-
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <KeyboardAvoidingView
@@ -148,23 +109,6 @@ export default function EditListingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
-            {previewImage ? (
-              <>
-                <Image source={{ uri: previewImage }} style={styles.imagePreview} />
-                <View style={styles.imageOverlay}>
-                  <Ionicons name="camera" size={22} color="#fff" />
-                  <Text style={styles.imageOverlayText}>Change Photo</Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
-                <Text style={styles.imagePickerText}>Add Photo (optional)</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>CATEGORY</Text>
             <View style={styles.optionRow}>
@@ -248,31 +192,6 @@ function createStyles(c: ThemeColors) {
     flex: { flex: 1 },
     center: { flex: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.xl },
-    imagePicker: {
-      height: 160,
-      borderRadius: BorderRadius.lg,
-      borderWidth: 1,
-      borderColor: c.surfaceBorder,
-      borderStyle: 'dashed',
-      backgroundColor: c.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      gap: Spacing.sm,
-    },
-    imagePreview: { position: 'absolute', width: '100%', height: '100%' },
-    imageOverlay: {
-      position: 'absolute',
-      bottom: 0, left: 0, right: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: Spacing.xs,
-      paddingVertical: Spacing.sm,
-    },
-    imageOverlayText: { color: '#fff', fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
-    imagePickerText: { fontSize: Typography.sizes.sm, color: c.textMuted },
     field: { gap: Spacing.sm },
     fieldLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold, color: c.textMuted, letterSpacing: 1.5 },
     optionRow: { flexDirection: 'row', gap: Spacing.sm },

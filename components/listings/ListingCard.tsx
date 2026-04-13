@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemeColors, BorderRadius, Typography, Spacing } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { FactionBadge, CategoryBadge } from '@/components/ui/Badge';
 import { MemberIcon } from '@/components/ui/MemberIcon';
 import { Listing } from '@/types';
 import { timeAgo, timeUntilExpiry } from '@/utils/dateFormat';
+import { useIsSaved, useIsSellerSaved } from '@/hooks/useSavedListings';
 
 interface ListingCardProps {
   listing: Listing;
@@ -15,6 +17,8 @@ interface ListingCardProps {
 export function ListingCard({ listing }: ListingCardProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { saved: listingSaved, toggle: toggleListing } = useIsSaved(listing.id);
+  const { saved: sellerSaved, toggle: toggleSeller } = useIsSellerSaved(listing.user_id);
 
   return (
     <TouchableOpacity
@@ -27,16 +31,26 @@ export function ListingCard({ listing }: ListingCardProps) {
           <FactionBadge faction={listing.faction} />
           <CategoryBadge category={listing.category} />
         </View>
-        <Text style={styles.time}>{timeAgo(listing.created_at)}</Text>
+        <View style={styles.headerRight}>
+          <Text style={styles.time}>{timeAgo(listing.created_at)}</Text>
+          <TouchableOpacity
+            onPress={toggleListing}
+            hitSlop={10}
+            style={styles.bookmarkBtn}
+          >
+            <Ionicons
+              name={listingSaved ? 'bookmark' : 'bookmark-outline'}
+              size={17}
+              color={listingSaved ? colors.accent : colors.textMuted}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.titleRow}>
-        <Text style={[styles.title, listing.image_url && styles.titleWithImage]} numberOfLines={2}>
+        <Text style={styles.title} numberOfLines={2}>
           {listing.title}
         </Text>
-        {listing.image_url && (
-          <Image source={{ uri: listing.image_url }} style={styles.thumbnail} />
-        )}
       </View>
 
       {listing.want_in_return && (
@@ -78,6 +92,17 @@ export function ListingCard({ listing }: ListingCardProps) {
             <Text style={styles.inactiveText}>INACTIVE</Text>
           </View>
         )}
+        <TouchableOpacity
+          onPress={toggleSeller}
+          hitSlop={10}
+          style={styles.sellerBookmarkBtn}
+        >
+          <Ionicons
+            name={sellerSaved ? 'person-add' : 'person-add-outline'}
+            size={14}
+            color={sellerSaved ? colors.accent : colors.textMuted}
+          />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -98,18 +123,18 @@ function createStyles(c: ThemeColors) {
       justifyContent: 'space-between',
       alignItems: 'flex-start',
     },
+    headerRight: {
+      alignItems: 'flex-end',
+      gap: 4,
+      marginLeft: Spacing.sm,
+    },
+    bookmarkBtn: {
+      padding: 2,
+    },
     titleRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: Spacing.sm,
-    },
-    titleWithImage: { flex: 1 },
-    thumbnail: {
-      width: 64,
-      height: 64,
-      borderRadius: BorderRadius.md,
-      backgroundColor: c.surfaceElevated,
-      flexShrink: 0,
     },
     badges: {
       flexDirection: 'row',
@@ -120,7 +145,6 @@ function createStyles(c: ThemeColors) {
     time: {
       fontSize: Typography.sizes.xs,
       color: c.textMuted,
-      marginLeft: Spacing.sm,
     },
     title: {
       fontSize: Typography.sizes.md,
@@ -204,6 +228,10 @@ function createStyles(c: ThemeColors) {
       fontSize: Typography.sizes.xs,
       color: c.danger,
       fontWeight: Typography.weights.bold,
+    },
+    sellerBookmarkBtn: {
+      padding: 2,
+      marginLeft: 2,
     },
   });
 }

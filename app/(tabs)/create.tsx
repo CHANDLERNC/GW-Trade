@@ -9,12 +9,9 @@ import {
   Platform,
   StatusBar,
   Alert,
-  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemeColors, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/Button';
@@ -25,23 +22,6 @@ import { CATEGORY_LIST } from '@/constants/categories';
 import { FACTION_LIST } from '@/constants/factions';
 import { MembershipModal } from '@/components/ui/MembershipModal';
 import { Category, FactionSlug } from '@/types';
-import { supabase } from '@/lib/supabase';
-
-async function uploadImage(uri: string, userId: string): Promise<string | null> {
-  try {
-    const fileName = `${userId}/${Date.now()}.jpg`;
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage
-      .from('listing-images')
-      .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
-    if (error) return null;
-    const { data } = supabase.storage.from('listing-images').getPublicUrl(fileName);
-    return data.publicUrl;
-  } catch {
-    return null;
-  }
-}
 
 export default function CreateScreen() {
   const { user, profile, refreshProfile } = useAuth();
@@ -52,7 +32,6 @@ export default function CreateScreen() {
   const [description, setDescription] = useState('');
   const [wantInReturn, setWantInReturn] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [imageUri, setImageUri] = useState<string | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [faction, setFaction] = useState<FactionSlug | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,22 +50,9 @@ export default function CreateScreen() {
     return Object.keys(e).length === 0;
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
-  };
-
   const handleSubmit = async () => {
     if (!validate() || !user) return;
     setLoading(true);
-
-    let imageUrl: string | null = null;
-    if (imageUri) imageUrl = await uploadImage(imageUri, user.id);
 
     const { error } = await listingsService.createListing({
       user_id: user.id,
@@ -96,7 +62,7 @@ export default function CreateScreen() {
       quantity: parseInt(quantity, 10),
       category: category!,
       faction: faction!,
-      image_url: imageUrl,
+      image_url: null,
       is_active: true,
     });
     setLoading(false);
@@ -115,7 +81,7 @@ export default function CreateScreen() {
         {
           text: 'Post another', onPress: () => {
             setTitle(''); setDescription(''); setWantInReturn('');
-            setQuantity('1'); setCategory(null); setFaction(null); setImageUri(null);
+            setQuantity('1'); setCategory(null); setFaction(null);
           },
         },
       ]);
@@ -138,23 +104,6 @@ export default function CreateScreen() {
             <Text style={styles.title}>Post a Trade</Text>
             <Text style={styles.subtitle}>Let other players know what you have</Text>
           </View>
-
-          <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
-            {imageUri ? (
-              <>
-                <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                <View style={styles.imageOverlay}>
-                  <Ionicons name="camera" size={20} color="#fff" />
-                  <Text style={styles.imageOverlayText}>Change Photo</Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <Ionicons name="camera-outline" size={30} color={colors.textMuted} />
-                <Text style={styles.imagePickerText}>Add Photo (optional)</Text>
-              </>
-            )}
-          </TouchableOpacity>
 
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>CATEGORY</Text>
@@ -278,31 +227,6 @@ function createStyles(c: ThemeColors) {
       color: c.text,
     },
     subtitle: { fontSize: Typography.sizes.md, color: c.textSecondary },
-    imagePicker: {
-      height: 150,
-      borderRadius: BorderRadius.lg,
-      borderWidth: 1,
-      borderColor: c.surfaceBorder,
-      borderStyle: 'dashed',
-      backgroundColor: c.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      gap: Spacing.sm,
-    },
-    imagePreview: { position: 'absolute', width: '100%', height: '100%' },
-    imageOverlay: {
-      position: 'absolute',
-      bottom: 0, left: 0, right: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: Spacing.xs,
-      paddingVertical: Spacing.sm,
-    },
-    imageOverlayText: { color: '#fff', fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
-    imagePickerText: { fontSize: Typography.sizes.sm, color: c.textMuted },
     field: { gap: Spacing.sm },
     fieldLabel: {
       fontSize: Typography.sizes.xs,

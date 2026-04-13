@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
-  Image,
   TextInput,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -207,10 +206,6 @@ export default function ListingDetailScreen() {
               </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
             </TouchableOpacity>
-          )}
-
-          {listing.image_url && (
-            <Image source={{ uri: listing.image_url }} style={styles.listingImage} resizeMode="cover" />
           )}
 
           <Text style={styles.title}>{listing.title}</Text>
@@ -464,6 +459,5 @@ function createStyles(c: ThemeColors) {
       borderWidth: 1, borderColor: c.danger + '44',
     },
     inactiveText: { fontSize: Typography.sizes.xs, color: c.danger, fontWeight: Typography.weights.bold },
-    listingImage: { width: '100%', height: 200, borderRadius: BorderRadius.lg, backgroundColor: c.surface },
   });
 }
