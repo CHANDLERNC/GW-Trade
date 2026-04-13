@@ -16,6 +16,13 @@ export interface CategoryInfo {
   description: string;
 }
 
+// Access level derived from profile flags — used throughout the app
+export type AccessLevel = 'lifetime' | 'premium' | 'temp_premium' | 'free';
+
+// Listing priority rank — higher = shown first in browse results
+// lifetime=4  premium=3  temp_premium=2  free=1
+export type PriorityRank = 1 | 2 | 3 | 4;
+
 export interface Profile {
   id: string;
   username: string;
@@ -24,10 +31,16 @@ export interface Profile {
   bio: string | null;
   faction_preference: FactionSlug | null;
   push_token: string | null;
+  // Paid subscription flags — only set by RevenueCat webhook (MONETIZATION_ENABLED=true)
   is_member: boolean;
   is_lifetime_member: boolean;
+  // Early adopter flags — set by claim_early_access() RPC
   is_early_adopter: boolean;
   early_access_claimed: boolean;
+  early_access_expires_at: string | null;
+  // Early adopter discount — tracked but not yet processed
+  early_adopter_discount_claimed: boolean;
+  early_adopter_discount_expires_at: string | null;
   display_name_color: string | null;
   member_since: string | null;
   member_expires_at: string | null;
@@ -78,6 +91,7 @@ export interface Listing {
   image_url: string | null;
   is_active: boolean;
   expires_at: string | null;
+  priority_rank: PriorityRank;
   created_at: string;
   updated_at: string;
   profiles?: ListingProfile;

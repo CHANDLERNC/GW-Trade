@@ -1,13 +1,19 @@
 import { supabase } from '@/lib/supabase';
 import { Listing, ListingFilters } from '@/types';
-import { MEMBERSHIP } from '@/constants/membership';
 import { LISTING_PROFILE_FIELDS } from '@/constants/queries';
+import {
+  getAccessLevel,
+  getListingLimit,
+  getPostDurationMs,
+  getPriorityRank,
+} from '@/services/membership.service';
 
 export const listingsService = {
   async getListings(filters: ListingFilters = {}) {
     let query = supabase
       .from('listings')
       .select(`*, profiles:user_id (${LISTING_PROFILE_FIELDS})`)
+      .order('priority_rank', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (filters.activeOnly !== false) {
@@ -51,41 +57,29 @@ export const listingsService = {
   async createListing(
     listing: Omit<Listing, 'id' | 'created_at' | 'updated_at' | 'profiles'>
   ) {
-    // Enforce listing limit based on membership tier
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_member, is_lifetime_member')
+      .select('is_member, is_lifetime_member, is_early_adopter, early_access_expires_at')
       .eq('id', listing.user_id)
       .single();
 
-    const isLifetime = profile?.is_lifetime_member ?? false;
-    const isMember = profile?.is_member ?? false;
-    const limit = isLifetime
-      ? MEMBERSHIP.LIFETIME_LIMIT
-      : isMember
-      ? MEMBERSHIP.MEMBER_LIMIT
-      : MEMBERSHIP.FREE_LIMIT;
-
+    const level = getAccessLevel(profile ?? null);
+    const limit = getListingLimit(level);
     const current = await this.getActiveListingCount(listing.user_id);
+
     if (current >= limit) {
-      const tier = isLifetime ? 'lifetime' : isMember ? 'member' : 'free';
       return {
         data: null,
-        error: { message: `LIMIT_REACHED:${limit}:${tier}` },
+        error: { message: `LIMIT_REACHED:${limit}:${level}` },
       };
     }
 
-    // Every tier gets a post duration limit
-    const MS = 1000;
-    const expires_at = isLifetime
-      ? new Date(Date.now() + MEMBERSHIP.LIFETIME_POST_DAYS * 86400 * MS).toISOString()
-      : isMember
-      ? new Date(Date.now() + MEMBERSHIP.MEMBER_POST_DAYS * 86400 * MS).toISOString()
-      : new Date(Date.now() + MEMBERSHIP.FREE_POST_HOURS * 3600 * MS).toISOString();
+    const expires_at = new Date(Date.now() + getPostDurationMs(level)).toISOString();
+    const priority_rank = getPriorityRank(level);
 
     return supabase
       .from('listings')
-      .insert({ ...listing, expires_at })
+      .insert({ ...listing, expires_at, priority_rank })
       .select()
       .single();
   },
