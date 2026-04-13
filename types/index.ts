@@ -116,3 +116,28 @@ export type ListingFilters = {
   userId?: string;
   activeOnly?: boolean;
 };
+
+// ── LFG ───────────────────────────────────────────────────────────────────────
+export type LFGRole = 'any' | 'rifleman' | 'medic' | 'recon' | 'support';
+export type LFGRegion = 'NA East' | 'NA West' | 'EU' | 'Asia' | 'OCE' | 'SA';
+
+export interface LFGPost {
+  id: string;
+  user_id: string;
+  faction: FactionSlug;
+  role: LFGRole;
+  region: LFGRegion;
+  slots_total: number;
+  description: string | null;
+  mic_required: boolean;
+  is_active: boolean;
+  expires_at: string;
+  created_at: string;
+  profiles?: Pick<Profile, 'id' | 'username' | 'display_name' | 'display_name_color' | 'faction_preference' | 'is_member' | 'is_lifetime_member' | 'is_early_adopter'>;
+}
+
+export type LFGFilters = {
+  faction?: FactionSlug | 'all';
+  role?: LFGRole | 'all';
+  region?: LFGRegion | 'all';
+};
