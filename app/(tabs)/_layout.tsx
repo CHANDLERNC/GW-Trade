@@ -33,25 +33,29 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.accent + '55',
+          borderTopColor: colors.surfaceBorder,
           borderTopWidth: 1,
-          paddingTop: 4,
-          height: 88,
-          paddingBottom: 20,
+          height: 83,
+          paddingTop: 9,
+          paddingBottom: 14,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: '600',
           marginTop: 2,
         },
+        tabBarIconStyle: {
+          marginBottom: 0,
+        },
       }}
     >
+      {/* ── Left 3 ── */}
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="home" size={25} color={color} />
           ),
         }}
       />
@@ -59,11 +63,22 @@ export default function TabLayout() {
         name="browse"
         options={{
           title: 'Browse',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="search" size={25} color={color} />
           ),
         }}
       />
+      <Tabs.Screen
+        name="lfg"
+        options={{
+          title: 'LFG',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="people" size={25} color={color} />
+          ),
+        }}
+      />
+
+      {/* ── Center ── */}
       <Tabs.Screen
         name="create"
         options={{
@@ -71,27 +86,40 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <View
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 4,
-                backgroundColor: focused ? colors.accent : colors.accent + 'CC',
+                width: 41,
+                height: 41,
+                borderRadius: 21,
+                backgroundColor: focused ? colors.accent : colors.accentDim,
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 4,
               }}
             >
-              <Ionicons name="add" size={26} color={colors.background} />
+              <Ionicons name="add" size={25} color={colors.background} />
             </View>
           ),
-          tabBarLabel: () => null,
+          tabBarLabel: ({ focused }) => (
+            <View style={{ marginTop: 0 }}>
+              <Ionicons
+                name="ellipse"
+                size={5}
+                color={focused ? colors.accent : 'transparent'}
+              />
+            </View>
+          ),
         }}
       />
+
+      {/* ── Right 3 ── */}
       <Tabs.Screen
-        name="lfg"
+        name="saved"
         options={{
-          title: 'LFG',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
+          title: 'Saved',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'bookmark' : 'bookmark-outline'}
+              size={25}
+              color={color}
+            />
           ),
         }}
       />
@@ -107,8 +135,12 @@ export default function TabLayout() {
             height: 18,
             lineHeight: 13,
           },
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-ellipses" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'}
+              size={25}
+              color={color}
+            />
           ),
         }}
       />
@@ -116,8 +148,12 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={25}
+              color={color}
+            />
           ),
         }}
       />
