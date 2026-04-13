@@ -31,8 +31,32 @@ export interface Profile {
   display_name_color: string | null;
   member_since: string | null;
   member_expires_at: string | null;
+  trades_completed: number;
+  ratings_positive: number;
+  ratings_negative: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface Trade {
+  id: string;
+  conversation_id: string;
+  listing_id: string | null;
+  party_one: string;
+  party_two: string;
+  party_one_confirmed: boolean;
+  party_two_confirmed: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface TradeRating {
+  id: string;
+  trade_id: string;
+  rater_id: string;
+  rated_id: string;
+  is_positive: boolean;
+  created_at: string;
 }
 
 export interface Listing {

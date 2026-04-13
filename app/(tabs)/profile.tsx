@@ -151,7 +151,47 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>{listings.filter((l) => l.is_active).length}</Text>
             <Text style={styles.statLabel}>Active</Text>
           </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{profile?.trades_completed ?? 0}</Text>
+            <Text style={styles.statLabel}>Trades</Text>
+          </View>
         </View>
+
+        {/* Trade Rating */}
+        {((profile?.ratings_positive ?? 0) + (profile?.ratings_negative ?? 0)) > 0 && (
+          <View style={styles.ratingCard}>
+            <View style={styles.ratingHeader}>
+              <Ionicons name="shield-checkmark" size={14} color={colors.accent} />
+              <Text style={styles.ratingTitle}>TRADER REPUTATION</Text>
+            </View>
+            <View style={styles.ratingRow}>
+              <View style={styles.ratingItem}>
+                <Ionicons name="thumbs-up" size={20} color={colors.success} />
+                <Text style={[styles.ratingCount, { color: colors.success }]}>
+                  {profile?.ratings_positive ?? 0}
+                </Text>
+              </View>
+              <View style={styles.ratingDivider} />
+              <View style={styles.ratingItem}>
+                <Ionicons name="thumbs-down" size={20} color={colors.danger} />
+                <Text style={[styles.ratingCount, { color: colors.danger }]}>
+                  {profile?.ratings_negative ?? 0}
+                </Text>
+              </View>
+              <View style={styles.ratingDivider} />
+              <View style={styles.ratingItem}>
+                <Text style={styles.ratingPct}>
+                  {Math.round(
+                    ((profile?.ratings_positive ?? 0) /
+                      ((profile?.ratings_positive ?? 0) + (profile?.ratings_negative ?? 0))) *
+                      100,
+                  )}%
+                </Text>
+                <Text style={styles.ratingPctLabel}>positive</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Membership */}
         {profile?.is_lifetime_member ? (
@@ -368,6 +408,30 @@ function createStyles(c: ThemeColors) {
     statsRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.surfaceBorder },
     statBox: { flex: 1, alignItems: 'center', paddingVertical: Spacing.lg, gap: Spacing.xs },
     statValue: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold, color: c.text },
+    ratingCard: {
+      marginHorizontal: Spacing.lg,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      borderLeftWidth: 3,
+      borderLeftColor: c.accent,
+      padding: Spacing.md,
+      gap: Spacing.sm,
+    },
+    ratingHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    ratingTitle: {
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+      color: c.accent,
+      letterSpacing: 1.5,
+    },
+    ratingRow: { flexDirection: 'row', alignItems: 'center' },
+    ratingItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+    ratingCount: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
+    ratingDivider: { width: 1, height: 28, backgroundColor: c.surfaceBorder },
+    ratingPct: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold, color: c.text },
+    ratingPctLabel: { fontSize: Typography.sizes.xs, color: c.textMuted, alignSelf: 'flex-end', paddingBottom: 2 },
     statLabel: { fontSize: Typography.sizes.xs, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
 
     section: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl, gap: Spacing.md },

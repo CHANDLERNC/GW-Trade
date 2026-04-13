@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
@@ -18,8 +19,10 @@ import { ThemeColors, Typography, Spacing, BorderRadius } from '@/constants/them
 import { useTheme } from '@/context/ThemeContext';
 import { useMessages } from '@/hooks/useMessages';
 import { messagesService } from '@/services/messages.service';
+import { tradesService } from '@/services/trades.service';
 import { useAuth } from '@/context/AuthContext';
-import { Message } from '@/types';
+import { TradeRatingModal } from '@/components/ui/TradeRatingModal';
+import { Message, Trade } from '@/types';
 import { supabase } from '@/lib/supabase';
 
 function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
@@ -54,25 +57,61 @@ export default function ConversationScreen() {
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
+  // Conversation meta
+  const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [partnerName, setPartnerName] = useState('');
+  const [listingId, setListingId] = useState<string | null>(null);
+
+  // Trade state
+  const [trade, setTrade] = useState<Trade | null>(null);
+  const [tradeLoading, setTradeLoading] = useState(false);
+  const [myRatingSubmitted, setMyRatingSubmitted] = useState(false);
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+
+  // Load conversation meta (partner ID + name, listing ID)
   useEffect(() => {
     if (!id || !user) return;
     supabase
       .from('conversations')
       .select(`
-        profiles_one:participant_one (username, display_name),
-        profiles_two:participant_two (username, display_name),
-        listings:listing_id (title)
+        listing_id,
+        participant_one,
+        participant_two,
+        profiles_one:participant_one (id, username, display_name),
+        profiles_two:participant_two (id, username, display_name)
       `)
       .eq('id', id)
       .single()
       .then(({ data }) => {
         if (!data) return;
-        const isOne = (data.profiles_one as any)?.id === user.id;
+        const isOne = data.participant_one === user.id;
         const other = isOne ? (data.profiles_two as any) : (data.profiles_one as any);
-        const name = other?.display_name ?? other?.username ?? 'Chat';
+        const name = other?.display_name ?? other?.username ?? 'Operator';
+        setPartnerId(other?.id ?? null);
+        setPartnerName(name);
+        setListingId(data.listing_id ?? null);
         navigation.setOptions({ headerTitle: name });
       });
   }, [id, user, navigation]);
+
+  // Load trade state
+  const loadTrade = useCallback(async () => {
+    if (!id) return;
+    const t = await tradesService.getTradeForConversation(id);
+    setTrade(t);
+
+    // If trade is complete, check if we've already rated
+    if (t?.completed_at && user) {
+      const myRating = await tradesService.getMyRating(t.id, user.id);
+      if (myRating) {
+        setMyRatingSubmitted(true);
+      } else {
+        setRatingModalVisible(true);
+      }
+    }
+  }, [id, user]);
+
+  useEffect(() => { loadTrade(); }, [loadTrade]);
 
   useEffect(() => {
     if (id && user) messagesService.markAsRead(id, user.id);
@@ -92,6 +131,65 @@ export default function ConversationScreen() {
     await messagesService.sendMessage(id, user.id, content);
     setSending(false);
   };
+
+  const handleMarkComplete = async () => {
+    if (!user || !id || !partnerId) return;
+
+    // If already confirmed our side, do nothing
+    const isPartyOne = trade?.party_one === user.id;
+    const alreadyConfirmed = trade
+      ? (isPartyOne ? trade.party_one_confirmed : trade.party_two_confirmed)
+      : false;
+    if (alreadyConfirmed) return;
+
+    Alert.alert(
+      'Mark Trade Complete',
+      'Confirm that the trade was successfully completed. Both parties must confirm before ratings are unlocked.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            setTradeLoading(true);
+            const { data, error } = await tradesService.markComplete(id, listingId, user.id, partnerId);
+            setTradeLoading(false);
+            if (error) {
+              Alert.alert('Error', error.message);
+            } else {
+              setTrade(data);
+              if (data?.completed_at) {
+                setRatingModalVisible(true);
+              }
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleSubmitRating = async (isPositive: boolean) => {
+    if (!trade || !user || !partnerId) return;
+    const { error } = await tradesService.submitRating(trade.id, user.id, partnerId, isPositive);
+    if (error) {
+      Alert.alert('Error', 'Could not submit rating. Please try again.');
+    } else {
+      setMyRatingSubmitted(true);
+      setRatingModalVisible(false);
+      Alert.alert('Rating Submitted', `Your rating for ${partnerName} has been recorded.`);
+    }
+  };
+
+  // Derive trade banner state
+  const tradeBannerState = useMemo(() => {
+    if (!trade) return 'none';
+    if (trade.completed_at) return 'complete';
+    const isPartyOne = trade.party_one === user?.id;
+    const myConfirmed = isPartyOne ? trade.party_one_confirmed : trade.party_two_confirmed;
+    const theirConfirmed = isPartyOne ? trade.party_two_confirmed : trade.party_one_confirmed;
+    if (myConfirmed && !theirConfirmed) return 'waiting';
+    if (!myConfirmed && theirConfirmed) return 'partner_confirmed';
+    return 'none';
+  }, [trade, user]);
 
   if (loading) {
     return (
@@ -124,6 +222,55 @@ export default function ConversationScreen() {
           }
         />
 
+        {/* Trade completion banner */}
+        {tradeBannerState === 'complete' ? (
+          <View style={[styles.tradeBanner, styles.tradeBannerComplete]}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+            <Text style={[styles.tradeBannerText, { color: colors.success }]}>
+              Trade complete
+            </Text>
+            {!myRatingSubmitted && (
+              <TouchableOpacity onPress={() => setRatingModalVisible(true)} activeOpacity={0.75}>
+                <Text style={styles.tradeBannerAction}>Rate {partnerName} →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : tradeBannerState === 'waiting' ? (
+          <View style={[styles.tradeBanner, styles.tradeBannerWaiting]}>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <Text style={styles.tradeBannerText}>
+              Waiting for {partnerName} to confirm...
+            </Text>
+          </View>
+        ) : tradeBannerState === 'partner_confirmed' ? (
+          <TouchableOpacity
+            style={[styles.tradeBanner, styles.tradeBannerPartner]}
+            onPress={handleMarkComplete}
+            activeOpacity={0.8}
+            disabled={tradeLoading}
+          >
+            <Ionicons name="alert-circle" size={16} color={colors.warning} />
+            <Text style={[styles.tradeBannerText, { color: colors.warning }]}>
+              {partnerName} confirmed — tap to complete
+            </Text>
+            {tradeLoading && <ActivityIndicator size="small" color={colors.warning} />}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.tradeBanner}
+            onPress={handleMarkComplete}
+            activeOpacity={0.8}
+            disabled={tradeLoading || !partnerId}
+          >
+            {tradeLoading ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Ionicons name="checkmark-done-outline" size={16} color={colors.accent} />
+            )}
+            <Text style={styles.tradeBannerText}>Mark trade as complete</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
@@ -149,6 +296,13 @@ export default function ConversationScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <TradeRatingModal
+        visible={ratingModalVisible}
+        partnerName={partnerName}
+        onSubmit={handleSubmitRating}
+        onDismiss={() => setRatingModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -191,6 +345,30 @@ function createStyles(c: ThemeColors) {
     },
     empty: { flex: 1, alignItems: 'center', paddingTop: Spacing.xxl },
     emptyText: { fontSize: Typography.sizes.md, color: c.textMuted },
+    tradeBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm + 2,
+      borderTopWidth: 1,
+      borderTopColor: c.accent + '44',
+      backgroundColor: c.surface,
+    },
+    tradeBannerComplete: { borderTopColor: c.success + '44' },
+    tradeBannerWaiting: { borderTopColor: c.accent + '33' },
+    tradeBannerPartner: { borderTopColor: c.warning + '44' },
+    tradeBannerText: {
+      fontSize: Typography.sizes.sm,
+      color: c.accent,
+      fontWeight: Typography.weights.semibold,
+      flex: 1,
+    },
+    tradeBannerAction: {
+      fontSize: Typography.sizes.sm,
+      color: c.accent,
+      fontWeight: Typography.weights.bold,
+    },
     inputBar: {
       flexDirection: 'row',
       alignItems: 'flex-end',
