@@ -10,28 +10,17 @@ export function useListingCounts() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const [keys, gear, items] = await Promise.all([
-      supabase
-        .from('listings')
-        .select('*', { count: 'exact', head: true })
-        .eq('category', 'keys')
-        .eq('is_active', true),
-      supabase
-        .from('listings')
-        .select('*', { count: 'exact', head: true })
-        .eq('category', 'gear')
-        .eq('is_active', true),
-      supabase
-        .from('listings')
-        .select('*', { count: 'exact', head: true })
-        .eq('category', 'items')
-        .eq('is_active', true),
-    ]);
-    setCounts({
-      keys: keys.count ?? 0,
-      gear: gear.count ?? 0,
-      items: items.count ?? 0,
-    });
+    const { data } = await supabase
+      .from('listings')
+      .select('category')
+      .eq('is_active', true)
+      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString());
+
+    const next: Counts = { keys: 0, gear: 0, items: 0 };
+    for (const row of data ?? []) {
+      if (row.category in next) next[row.category as Category]++;
+    }
+    setCounts(next);
     setLoading(false);
   }, []);
 

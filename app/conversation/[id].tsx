@@ -128,7 +128,7 @@ export default function ConversationScreen() {
     if (!content || !user || !id) return;
     setText('');
     setSending(true);
-    await messagesService.sendMessage(id, user.id, content);
+    if (partnerId) await messagesService.sendMessage(id, user.id, content, partnerId);
     setSending(false);
   };
 

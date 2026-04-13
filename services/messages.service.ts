@@ -84,7 +84,12 @@ export const messagesService = {
       .order('created_at', { ascending: true });
   },
 
-  async sendMessage(conversationId: string, senderId: string, content: string) {
+  async sendMessage(
+    conversationId: string,
+    senderId: string,
+    content: string,
+    recipientId: string
+  ) {
     const { data, error } = await supabase
       .from('messages')
       .insert({ conversation_id: conversationId, sender_id: senderId, content })
@@ -100,7 +105,7 @@ export const messagesService = {
           .from('conversations')
           .update({ last_message_at: new Date().toISOString(), last_message_preview: preview })
           .eq('id', conversationId),
-        sendNotificationToRecipient(conversationId, senderId, content),
+        sendNotificationToRecipient(senderId, recipientId, content),
       ]);
     }
 
@@ -154,24 +159,13 @@ export const messagesService = {
   },
 };
 
-// Internal helper — fetch recipient push token and send notification
+// Internal helper — fetch sender/recipient profiles and send push notification
 async function sendNotificationToRecipient(
-  conversationId: string,
   senderId: string,
+  recipientId: string,
   content: string
 ) {
   try {
-    const { data: conv } = await supabase
-      .from('conversations')
-      .select('participant_one, participant_two')
-      .eq('id', conversationId)
-      .single();
-
-    if (!conv) return;
-
-    const recipientId =
-      conv.participant_one === senderId ? conv.participant_two : conv.participant_one;
-
     const [{ data: sender }, { data: recipient }] = await Promise.all([
       supabase.from('profiles').select('username').eq('id', senderId).single(),
       supabase.from('profiles').select('push_token').eq('id', recipientId).single(),
