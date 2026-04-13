@@ -152,10 +152,10 @@ export default function ConversationScreen() {
           text: 'Confirm',
           onPress: async () => {
             setTradeLoading(true);
-            const { data, error } = await tradesService.markComplete(id, listingId, user.id, partnerId);
+            const { data, error } = await tradesService.markComplete(id);
             setTradeLoading(false);
             if (error) {
-              Alert.alert('Error', error.message);
+              Alert.alert('Cannot Confirm Trade', error.message);
             } else {
               setTrade(data);
               if (data?.completed_at) {
