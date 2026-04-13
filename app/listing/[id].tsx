@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,9 @@ import {
   Image,
   TextInput,
   KeyboardAvoidingView,
-  Platform,
-  Animated,
 } from 'react-native';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useLayoutEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -28,110 +27,14 @@ import { listingsService } from '@/services/listings.service';
 import { messagesService } from '@/services/messages.service';
 import { useAuth } from '@/context/AuthContext';
 import { FACTIONS } from '@/constants/factions';
-import { resolveNameColor } from '@/constants/nameColors';
-import { Comment } from '@/types';
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function CommentBubble({
-  comment,
-  isOwn,
-  isListingOwner,
-  onDelete,
-}: {
-  comment: Comment;
-  isOwn: boolean;
-  isListingOwner: boolean;
-  onDelete: (id: string) => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createCommentStyles(colors), [colors]);
-  const canDelete = isOwn || isListingOwner;
-  const name = comment.profiles?.display_name ?? comment.profiles?.username ?? 'Unknown';
-  const initial = name[0].toUpperCase();
-  const nameColor = resolveNameColor(comment.profiles?.display_name_color);
-
-  const handleDelete = () => {
-    Alert.alert('Delete Comment', 'Remove this comment?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => onDelete(comment.id) },
-    ]);
-  };
-
-  return (
-    <View style={styles.commentRow}>
-      <View style={styles.commentAvatar}>
-        <Text style={styles.commentAvatarText}>{initial}</Text>
-      </View>
-      <View style={styles.commentBody}>
-        <View style={styles.commentMeta}>
-          <View style={styles.commentNameRow}>
-            <Text style={[styles.commentUsername, { color: nameColor }]}>{name}</Text>
-            <MemberIcon
-              isLifetime={comment.profiles?.is_lifetime_member}
-              isMember={comment.profiles?.is_member}
-              isEarlyAdopter={comment.profiles?.is_early_adopter}
-              size={12}
-            />
-          </View>
-          <Text style={styles.commentTime}>{timeAgo(comment.created_at)}</Text>
-        </View>
-        <Text style={styles.commentContent}>{comment.content}</Text>
-      </View>
-      {canDelete && (
-        <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
-
-function ListingDetailSkeleton() {
-  const { colors } = useTheme();
-  const opacity = useRef(new Animated.Value(0.4)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.85, duration: 650, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 650, useNativeDriver: true }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity]);
-
-  return (
-    <ScrollView
-      contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, gap: Spacing.lg }}
-      scrollEnabled={false}
-    >
-      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-        <Animated.View style={{ width: 68, height: 26, borderRadius: 4, backgroundColor: colors.surface, opacity }} />
-        <Animated.View style={{ width: 68, height: 26, borderRadius: 4, backgroundColor: colors.surface, opacity }} />
-      </View>
-      <Animated.View style={{ height: 200, borderRadius: BorderRadius.lg, backgroundColor: colors.surface, opacity }} />
-      <Animated.View style={{ width: '75%', height: 28, borderRadius: 6, backgroundColor: colors.surface, opacity }} />
-      <Animated.View style={{ width: '40%', height: 14, borderRadius: 4, backgroundColor: colors.surface, opacity }} />
-      <Animated.View style={{ height: 100, borderRadius: BorderRadius.lg, backgroundColor: colors.surface, opacity }} />
-      <Animated.View style={{ height: 80, borderRadius: BorderRadius.lg, backgroundColor: colors.surface, opacity }} />
-      <Animated.View style={{ height: 110, borderRadius: BorderRadius.lg, backgroundColor: colors.surface, opacity }} />
-    </ScrollView>
-  );
-}
+import { timeAgo } from '@/utils/dateFormat';
+import { CommentBubble } from '@/components/listings/CommentBubble';
+import { ListingDetailSkeleton } from '@/components/listings/ListingDetailSkeleton';
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { listing, loading } = useListing(id);
+  const headerHeight = useHeaderHeight();
   const { user } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -273,8 +176,8 @@ export default function ListingDetailScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        behavior="padding"
+        keyboardVerticalOffset={headerHeight}
       >
         <ScrollView
           ref={scrollRef}
@@ -449,30 +352,6 @@ export default function ListingDetailScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function createCommentStyles(c: ThemeColors) {
-  return StyleSheet.create({
-    commentRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
-    commentAvatar: {
-      width: 32, height: 32, borderRadius: 16,
-      backgroundColor: c.surfaceElevated,
-      borderWidth: 1, borderColor: c.surfaceBorder,
-      alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    },
-    commentAvatarText: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold, color: c.textSecondary },
-    commentBody: {
-      flex: 1, backgroundColor: c.surface,
-      borderRadius: BorderRadius.md, borderWidth: 1, borderColor: c.surfaceBorder,
-      padding: Spacing.sm, gap: Spacing.xs,
-    },
-    commentMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    commentNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    commentUsername: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold },
-    commentTime: { fontSize: Typography.sizes.xs, color: c.textMuted },
-    commentContent: { fontSize: Typography.sizes.sm, color: c.text, lineHeight: 20 },
-    deleteBtn: { paddingTop: Spacing.xs, flexShrink: 0 },
-  });
 }
 
 function createStyles(c: ThemeColors) {

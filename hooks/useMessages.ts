@@ -1,36 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { messagesService } from '@/services/messages.service';
 import { Conversation, Message } from '@/types';
+import { useQuery } from '@/hooks/useQuery';
 
 export function useConversations(userId: string | undefined) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async (isRefresh = false) => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
-
-    const { data, error: err } = await messagesService.getConversations(userId);
-    if (err) setError((err as any).message ?? 'Failed to load conversations');
-    else setConversations((data as Conversation[]) ?? []);
-
-    if (isRefresh) setRefreshing(false);
-    else setLoading(false);
-  }, [userId]);
-
-  const refetch = useCallback(() => fetchData(true), [fetchData]);
-
-  useEffect(() => {
-    fetchData(false);
-  }, [userId]);
-
+  const { data: conversations, loading, refreshing, error, refetch } = useQuery<Conversation>(
+    async () => {
+      if (!userId) return { data: [], error: null };
+      return messagesService.getConversations(userId) as Promise<{ data: Conversation[]; error: any }>;
+    },
+    [userId]
+  );
   return { conversations, loading, refreshing, error, refetch };
 }
 

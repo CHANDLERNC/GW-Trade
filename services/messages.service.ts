@@ -1,8 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { notificationsService } from '@/services/notifications.service';
-
-const PROFILE_FIELDS = 'id, username, display_name, avatar_url';
+import { CONVERSATION_PROFILE_FIELDS } from '@/constants/queries';
 
 export const messagesService = {
   async getConversations(userId: string) {
@@ -10,8 +9,8 @@ export const messagesService = {
       .from('conversations')
       .select(`
         *,
-        profiles_one:participant_one (${PROFILE_FIELDS}),
-        profiles_two:participant_two (${PROFILE_FIELDS}),
+        profiles_one:participant_one (${CONVERSATION_PROFILE_FIELDS}),
+        profiles_two:participant_two (${CONVERSATION_PROFILE_FIELDS}),
         listings:listing_id (id, title, category, faction)
       `)
       .or(`participant_one.eq.${userId},participant_two.eq.${userId}`)
@@ -79,7 +78,7 @@ export const messagesService = {
   async getMessages(conversationId: string) {
     return supabase
       .from('messages')
-      .select(`*, profiles:sender_id (${PROFILE_FIELDS})`)
+      .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
   },

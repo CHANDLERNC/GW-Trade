@@ -59,6 +59,13 @@ export interface TradeRating {
   created_at: string;
 }
 
+export type ListingProfile = Pick<Profile,
+  'id' | 'username' | 'display_name' | 'faction_preference' |
+  'is_member' | 'is_lifetime_member' | 'is_early_adopter'
+>;
+
+export type ConversationProfile = Pick<Profile, 'id' | 'username' | 'display_name'>;
+
 export interface Listing {
   id: string;
   user_id: string;
@@ -73,7 +80,7 @@ export interface Listing {
   expires_at: string | null;
   created_at: string;
   updated_at: string;
-  profiles?: Profile;
+  profiles?: ListingProfile;
 }
 
 export interface Conversation {
@@ -85,8 +92,8 @@ export interface Conversation {
   last_message_preview: string | null;
   created_at: string;
   unread_count?: number;
-  profiles_one?: Profile;
-  profiles_two?: Profile;
+  profiles_one?: ConversationProfile;
+  profiles_two?: ConversationProfile;
   listings?: Pick<Listing, 'id' | 'title' | 'category' | 'faction'> | null;
 }
 
@@ -97,7 +104,6 @@ export interface Message {
   content: string;
   is_read: boolean;
   created_at: string;
-  profiles?: Profile;
 }
 
 export interface Comment {

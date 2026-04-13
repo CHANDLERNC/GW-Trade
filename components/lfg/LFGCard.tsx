@@ -15,6 +15,7 @@ import { FACTIONS } from '@/constants/factions';
 import { LFGPost, LFGZone } from '@/types';
 import { messagesService } from '@/services/messages.service';
 import { useState } from 'react';
+import { timeAgo } from '@/utils/dateFormat';
 
 const ZONE_LABELS: Record<LFGZone, string> = {
   any: 'Any Zone',
@@ -43,16 +44,6 @@ const ZONE_ICONS: Record<LFGZone, string> = {
   hunters_paradise: 'compass',
   falng_airfield: 'airplane',
 };
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
 
 interface Props {
   post: LFGPost;

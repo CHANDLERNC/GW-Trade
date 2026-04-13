@@ -1,43 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { listingsService } from '@/services/listings.service';
 import { Listing, ListingFilters } from '@/types';
+import { useQuery } from '@/hooks/useQuery';
 
 export function useListings(filters: ListingFilters = {}) {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const filtersKey = JSON.stringify(filters);
-
-  const fetchData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-    const { data, error } = await listingsService.getListings(
-      JSON.parse(filtersKey) as ListingFilters
-    );
-    if (error) {
-      setError(error.message);
-    } else {
-      setListings((data as Listing[]) ?? []);
-    }
-    if (isRefresh) {
-      setRefreshing(false);
-    } else {
-      setLoading(false);
-    }
-  }, [filtersKey]);
-
-  const refetch = useCallback(() => fetchData(true), [fetchData]);
-
-  useEffect(() => {
-    fetchData(false);
-  }, [fetchData]);
-
+  const { data: listings, loading, refreshing, error, refetch } = useQuery<Listing>(
+    () => listingsService.getListings(JSON.parse(filtersKey) as ListingFilters),
+    [filtersKey]
+  );
   return { listings, loading, refreshing, error, refetch };
 }
 

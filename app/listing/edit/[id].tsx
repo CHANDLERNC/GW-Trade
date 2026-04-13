@@ -6,12 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
-  Platform,
   Alert,
   ActivityIndicator,
   Image,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -45,6 +45,7 @@ async function uploadImage(uri: string, userId: string): Promise<string | null> 
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const headerHeight = useHeaderHeight();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -139,7 +140,8 @@ export default function EditListingScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
+        keyboardVerticalOffset={headerHeight}
       >
         <ScrollView
           contentContainerStyle={styles.scroll}

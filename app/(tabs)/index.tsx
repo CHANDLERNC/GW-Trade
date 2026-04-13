@@ -21,25 +21,11 @@ import { MemberIcon } from '@/components/ui/MemberIcon';
 import { useAuth } from '@/context/AuthContext';
 import { useListingCounts } from '@/hooks/useListingCounts';
 import { FACTION_LIST } from '@/constants/factions';
-import { CATEGORY_LIST } from '@/constants/categories';
+import { CATEGORY_LIST, CATEGORY_META, TACTICAL_STATUS } from '@/constants/categories';
 import { resolveNameColor } from '@/constants/nameColors';
 import { listingsService } from '@/services/listings.service';
+import { timeAgo } from '@/utils/dateFormat';
 import { Category, FactionSlug, Listing } from '@/types';
-
-const TACTICAL_STATUS = [
-  'Back on duty, Operator',
-  'Standby for intel, Operator',
-  'Zone secured — trading open',
-  'Operator on station',
-  'All units reporting in',
-  'Sitrep: market active',
-  'Welcome back to the field',
-  'Eyes on the market, Operator',
-  'Patrol resumed — good to see you',
-  'Gear check complete, Operator',
-  'Comms re-established',
-  'Area clear — market is live',
-] as const;
 
 function getRandomStatus(): string {
   return TACTICAL_STATUS[Math.floor(Math.random() * TACTICAL_STATUS.length)];
@@ -51,21 +37,6 @@ function getMilitaryDate(): string {
     day: '2-digit', month: 'short', year: 'numeric',
   }).toUpperCase();
 }
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-const CATEGORY_META: Record<Category, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  keys:  { icon: 'key',    color: '#E8B84B' },
-  gear:  { icon: 'shield', color: '#4A6FA5' },
-  items: { icon: 'cube',   color: '#5B8A6E' },
-};
 
 export default function HomeScreen() {
   const { profile } = useAuth();

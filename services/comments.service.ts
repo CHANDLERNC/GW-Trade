@@ -1,13 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
-
-const PROFILE_FIELDS = 'id, username, display_name, display_name_color, is_member, is_lifetime_member, is_early_adopter';
+import { COMMENT_PROFILE_FIELDS } from '@/constants/queries';
 
 export const commentsService = {
   async getComments(listingId: string) {
     return supabase
       .from('comments')
-      .select(`*, profiles:user_id (${PROFILE_FIELDS})`)
+      .select(`*, profiles:user_id (${COMMENT_PROFILE_FIELDS})`)
       .eq('listing_id', listingId)
       .order('created_at', { ascending: true });
   },

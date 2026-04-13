@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { LFGPost, LFGFilters } from '@/types';
+import { LFG_PROFILE_FIELDS } from '@/constants/queries';
 
 export function lfgPostDurationHours(isLifetimeMember: boolean, isMember: boolean): number {
   if (isLifetimeMember) return 48;
@@ -7,14 +8,11 @@ export function lfgPostDurationHours(isLifetimeMember: boolean, isMember: boolea
   return 12;
 }
 
-const PROFILE_FIELDS =
-  'id, username, display_name, display_name_color, faction_preference, is_member, is_lifetime_member, is_early_adopter';
-
 export const lfgService = {
   async fetchPosts(filters: LFGFilters = {}): Promise<{ data: LFGPost[]; error: any }> {
     let query = supabase
       .from('lfg_posts')
-      .select(`*, profiles:user_id (${PROFILE_FIELDS})`)
+      .select(`*, profiles:user_id (${LFG_PROFILE_FIELDS})`)
       .eq('is_active', true)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false });
@@ -68,7 +66,7 @@ export const lfgService = {
         mic_required: post.mic_required,
         expires_at: expiresAt,
       })
-      .select(`*, profiles:user_id (${PROFILE_FIELDS})`)
+      .select(`*, profiles:user_id (${LFG_PROFILE_FIELDS})`)
       .single();
 
     return { data: data as LFGPost | null, error };
@@ -85,7 +83,7 @@ export const lfgService = {
   async getMyActivePost(userId: string): Promise<LFGPost | null> {
     const { data } = await supabase
       .from('lfg_posts')
-      .select(`*, profiles:user_id (${PROFILE_FIELDS})`)
+      .select(`*, profiles:user_id (${LFG_PROFILE_FIELDS})`)
       .eq('user_id', userId)
       .eq('is_active', true)
       .gt('expires_at', new Date().toISOString())

@@ -1,14 +1,13 @@
 import { supabase } from '@/lib/supabase';
 import { Listing, ListingFilters } from '@/types';
 import { MEMBERSHIP } from '@/constants/membership';
-
-const PROFILE_FIELDS = 'id, username, display_name, avatar_url, faction_preference, is_member, is_lifetime_member';
+import { LISTING_PROFILE_FIELDS } from '@/constants/queries';
 
 export const listingsService = {
   async getListings(filters: ListingFilters = {}) {
     let query = supabase
       .from('listings')
-      .select(`*, profiles:user_id (${PROFILE_FIELDS})`)
+      .select(`*, profiles:user_id (${LISTING_PROFILE_FIELDS})`)
       .order('created_at', { ascending: false });
 
     if (filters.activeOnly !== false) {
@@ -35,7 +34,7 @@ export const listingsService = {
   async getListing(id: string) {
     return supabase
       .from('listings')
-      .select(`*, profiles:user_id (${PROFILE_FIELDS})`)
+      .select(`*, profiles:user_id (${LISTING_PROFILE_FIELDS})`)
       .eq('id', id)
       .single();
   },

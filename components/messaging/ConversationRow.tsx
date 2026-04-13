@@ -4,17 +4,7 @@ import { router } from 'expo-router';
 import { ThemeColors, BorderRadius, Typography, Spacing } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { Conversation } from '@/types';
-
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'now';
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  return `${Math.floor(hrs / 24)}d`;
-}
+import { timeAgoShort } from '@/utils/dateFormat';
 
 interface ConversationRowProps {
   conversation: Conversation;
@@ -49,7 +39,7 @@ export function ConversationRow({ conversation, currentUserId }: ConversationRow
             </Text>
             {hasUnread && <View style={styles.unreadDot} />}
           </View>
-          <Text style={styles.time}>{timeAgo(conversation.last_message_at)}</Text>
+          <Text style={styles.time}>{timeAgoShort(conversation.last_message_at)}</Text>
         </View>
 
         {conversation.listings && (

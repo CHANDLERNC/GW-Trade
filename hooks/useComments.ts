@@ -23,9 +23,7 @@ export function useComments(listingId: string) {
   const addComment = async (userId: string, content: string) => {
     setPosting(true);
     const { error } = await commentsService.addComment(listingId, userId, content);
-    if (!error) {
-      await fetch(); // refetch with full profile join
-    }
+    // No manual refetch needed — the Realtime subscription triggers fetch() on INSERT
     setPosting(false);
     return { error };
   };
