@@ -63,18 +63,25 @@ export function ListingCard({ listing }: ListingCardProps) {
       )}
 
       <View style={styles.footer}>
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>
-            {(listing.profiles?.username ?? '?')[0].toUpperCase()}
-          </Text>
-        </View>
-        <Text style={styles.username}>{listing.profiles?.username ?? 'Unknown'}</Text>
-        <MemberIcon
-          isLifetime={listing.profiles?.is_lifetime_member}
-          isMember={listing.profiles?.is_member}
-          isEarlyAdopter={listing.profiles?.is_early_adopter}
-          size={13}
-        />
+        <TouchableOpacity
+          style={styles.sellerRow}
+          onPress={() => router.push(`/user/${listing.user_id}`)}
+          hitSlop={6}
+          activeOpacity={0.7}
+        >
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>
+              {(listing.profiles?.username ?? '?')[0].toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.username}>{listing.profiles?.username ?? 'Unknown'}</Text>
+          <MemberIcon
+            isLifetime={listing.profiles?.is_lifetime_member}
+            isMember={listing.profiles?.is_member}
+            isEarlyAdopter={listing.profiles?.is_early_adopter}
+            size={13}
+          />
+        </TouchableOpacity>
         {listing.quantity > 1 && (
           <Text style={styles.qty}>x{listing.quantity}</Text>
         )}
@@ -177,6 +184,12 @@ function createStyles(c: ThemeColors) {
       alignItems: 'center',
       gap: Spacing.xs,
     },
+    sellerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      flex: 1,
+    },
     avatarCircle: {
       width: 22,
       height: 22,
@@ -195,7 +208,6 @@ function createStyles(c: ThemeColors) {
     username: {
       fontSize: Typography.sizes.sm,
       color: c.textSecondary,
-      flex: 1,
     },
     qty: {
       fontSize: Typography.sizes.xs,

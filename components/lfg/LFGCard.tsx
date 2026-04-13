@@ -88,9 +88,16 @@ export function LFGCard({ post, onClose }: Props) {
               {faction.shortName}
             </Text>
           </View>
-          <Text style={styles.displayName} numberOfLines={1}>
-            <Text style={{ color: nameColor }}>{displayName}</Text>
-          </Text>
+          <TouchableOpacity
+            style={styles.posterNameBtn}
+            onPress={() => router.push(`/user/${post.user_id}`)}
+            activeOpacity={0.7}
+            hitSlop={6}
+          >
+            <Text style={[styles.displayName, { color: nameColor }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.time}>{timeAgo(post.created_at)}</Text>
         </View>
 
@@ -214,8 +221,10 @@ function createStyles(c: ThemeColors) {
       fontWeight: Typography.weights.bold,
       letterSpacing: 0.5,
     },
-    displayName: {
+    posterNameBtn: {
       flex: 1,
+    },
+    displayName: {
       fontSize: Typography.sizes.sm,
       fontWeight: Typography.weights.semibold,
       color: c.text,

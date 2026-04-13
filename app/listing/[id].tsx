@@ -250,7 +250,11 @@ export default function ListingDetailScreen() {
 
           <View style={styles.sellerBox}>
             <Text style={styles.sellerSectionLabel}>SELLER</Text>
-            <View style={styles.sellerRow}>
+            <TouchableOpacity
+              style={styles.sellerRow}
+              onPress={() => router.push(`/user/${listing.user_id}`)}
+              activeOpacity={0.75}
+            >
               <View style={styles.sellerAvatar}>
                 <Text style={styles.sellerAvatarText}>
                   {(listing.profiles?.username ?? '?')[0].toUpperCase()}
@@ -270,7 +274,8 @@ export default function ListingDetailScreen() {
                   <FactionBadge faction={listing.profiles.faction_preference} />
                 )}
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.commentsSection}>
