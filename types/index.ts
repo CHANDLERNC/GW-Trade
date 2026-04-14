@@ -98,6 +98,8 @@ export interface Listing {
   description: string | null;
   category: Category;
   faction: FactionSlug;
+  /** Canonical key name from the master key list. Only set when category = 'keys'. */
+  key_name: string | null;
   quantity: number;
   want_in_return: string | null;
   image_url: string | null;
@@ -170,6 +172,8 @@ export interface Report {
 export interface PriceHistoryEntry {
   id: string;
   item_name: string;
+  /** Canonical key name — only present for category = 'keys' entries. */
+  key_name: string | null;
   want_in_return: string | null;
   faction: FactionSlug | null;
   category: Category | null;

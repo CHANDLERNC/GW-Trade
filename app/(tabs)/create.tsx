@@ -12,16 +12,19 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemeColors, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { KeySelector } from '@/components/ui/KeySelector';
 import { listingsService } from '@/services/listings.service';
 import { useAuth } from '@/context/AuthContext';
 import { CATEGORY_LIST } from '@/constants/categories';
 import { FACTION_LIST } from '@/constants/factions';
 import { MembershipModal } from '@/components/ui/MembershipModal';
 import { Category, FactionSlug } from '@/types';
+import { GZWKey } from '@/constants/gzwKeys';
 
 export default function CreateScreen() {
   const { user, profile, refreshProfile } = useAuth();
@@ -34,16 +37,38 @@ export default function CreateScreen() {
   const [quantity, setQuantity] = useState('1');
   const [category, setCategory] = useState<Category | null>(null);
   const [faction, setFaction] = useState<FactionSlug | null>(null);
+  const [selectedKey, setSelectedKey] = useState<GZWKey | null>(null);
+  const [keySelectorVisible, setKeySelectorVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [membershipModalVisible, setMembershipModalVisible] = useState(false);
   const [currentListingCount, setCurrentListingCount] = useState(0);
 
+  const isKeyCategory = category === 'keys';
+
+  const handleCategoryChange = (cat: Category) => {
+    setCategory(cat);
+    if (cat !== 'keys') {
+      setSelectedKey(null);
+    } else {
+      setTitle('');
+    }
+  };
+
+  const handleKeySelected = (key: GZWKey) => {
+    setSelectedKey(key);
+    setErrors(e => ({ ...e, key: undefined as unknown as string }));
+  };
+
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!title.trim()) e.title = 'Title is required.';
     if (!category) e.category = 'Select a category.';
     if (!faction) e.faction = 'Select a faction.';
+    if (isKeyCategory) {
+      if (!selectedKey) e.key = 'Select a key from the list.';
+    } else {
+      if (!title.trim()) e.title = 'Title is required.';
+    }
     const qty = parseInt(quantity, 10);
     if (isNaN(qty) || qty < 1) e.quantity = 'Enter a valid quantity.';
     setErrors(e);
@@ -54,15 +79,18 @@ export default function CreateScreen() {
     if (!validate() || !user) return;
     setLoading(true);
 
+    const listingTitle = isKeyCategory ? selectedKey!.name : title.trim();
+    const keyName = isKeyCategory ? selectedKey!.name : null;
+
     const { error } = await listingsService.createListing({
       user_id: user.id,
-      title: title.trim(),
+      title: listingTitle,
+      key_name: keyName,
       description: description.trim() || null,
       want_in_return: wantInReturn.trim() || null,
       quantity: parseInt(quantity, 10),
       category: category!,
       faction: faction!,
-      image_url: null,
       is_active: true,
     });
     setLoading(false);
@@ -82,6 +110,7 @@ export default function CreateScreen() {
           text: 'Post another', onPress: () => {
             setTitle(''); setDescription(''); setWantInReturn('');
             setQuantity('1'); setCategory(null); setFaction(null);
+            setSelectedKey(null);
           },
         },
       ]);
@@ -105,6 +134,7 @@ export default function CreateScreen() {
             <Text style={styles.subtitle}>Let other players know what you have</Text>
           </View>
 
+          {/* CATEGORY */}
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>CATEGORY</Text>
             <View style={styles.optionRow}>
@@ -112,7 +142,7 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   key={cat.id}
                   style={[styles.optionBtn, category === cat.id && styles.optionBtnActive]}
-                  onPress={() => setCategory(cat.id)}
+                  onPress={() => handleCategoryChange(cat.id)}
                   activeOpacity={0.75}
                 >
                   <Text style={[styles.optionText, category === cat.id && styles.optionTextActive]}>
@@ -124,6 +154,7 @@ export default function CreateScreen() {
             {errors.category && <Text style={styles.error}>{errors.category}</Text>}
           </View>
 
+          {/* FACTION */}
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>FACTION</Text>
             <View style={styles.factionOptions}>
@@ -151,17 +182,56 @@ export default function CreateScreen() {
             {errors.faction && <Text style={styles.error}>{errors.faction}</Text>}
           </View>
 
+          {/* DETAILS */}
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>DETAILS</Text>
             <View style={styles.inputs}>
-              <Input
-                label="Title"
-                value={title}
-                onChangeText={setTitle}
-                placeholder="e.g. WTS Bunker 11 Key x2"
-                error={errors.title}
-                maxLength={100}
-              />
+
+              {/* Key picker (keys category only) */}
+              {isKeyCategory ? (
+                <View style={styles.keyPickerWrapper}>
+                  <Text style={styles.inputLabel}>Key</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.keyPickerBtn,
+                      errors.key ? styles.keyPickerBtnError : undefined,
+                      selectedKey ? styles.keyPickerBtnSelected : undefined,
+                    ]}
+                    onPress={() => setKeySelectorVisible(true)}
+                    activeOpacity={0.75}
+                  >
+                    {selectedKey ? (
+                      <>
+                        <Text style={styles.keyPickerValue} numberOfLines={2}>
+                          {selectedKey.name}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={styles.keyPickerChevron} />
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.keyPickerPlaceholder}>Select a key from the list...</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={styles.keyPickerChevron} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  {selectedKey && (
+                    <Text style={styles.keyPickerHint}>
+                      {selectedKey.location}
+                    </Text>
+                  )}
+                  {errors.key && <Text style={styles.error}>{errors.key}</Text>}
+                </View>
+              ) : (
+                <Input
+                  label="Title"
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="e.g. WTS Level 4 Armor"
+                  error={errors.title}
+                  maxLength={100}
+                />
+              )}
+
               <Input
                 label="Description (optional)"
                 value={description}
@@ -201,6 +271,13 @@ export default function CreateScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <KeySelector
+        visible={keySelectorVisible}
+        selectedKeyName={selectedKey?.name ?? null}
+        onSelect={handleKeySelected}
+        onClose={() => setKeySelectorVisible(false)}
+      />
 
       <MembershipModal
         visible={membershipModalVisible}
@@ -272,5 +349,43 @@ function createStyles(c: ThemeColors) {
     multiline: { height: 80, textAlignVertical: 'top', paddingTop: Spacing.sm },
     error: { fontSize: Typography.sizes.xs, color: c.danger, marginTop: -Spacing.xs },
     submitBtn: { marginTop: Spacing.sm },
+    // Key picker
+    keyPickerWrapper: { gap: Spacing.xs },
+    inputLabel: {
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.medium,
+      color: c.textSecondary,
+      marginBottom: 2,
+    },
+    keyPickerBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      minHeight: 48,
+    },
+    keyPickerBtnError: { borderColor: c.danger },
+    keyPickerBtnSelected: { borderColor: c.accent + '88' },
+    keyPickerPlaceholder: {
+      flex: 1,
+      fontSize: Typography.sizes.md,
+      color: c.textMuted,
+    },
+    keyPickerValue: {
+      flex: 1,
+      fontSize: Typography.sizes.md,
+      color: c.text,
+      lineHeight: 20,
+    },
+    keyPickerChevron: { marginLeft: Spacing.sm, flexShrink: 0 },
+    keyPickerHint: {
+      fontSize: Typography.sizes.xs,
+      color: c.textMuted,
+      marginTop: 2,
+    },
   });
 }

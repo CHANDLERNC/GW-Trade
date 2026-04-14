@@ -277,11 +277,18 @@ export default function ProfileScreen() {
 
         <View style={styles.signOutSection}>
           {profile?.is_admin && (
-            <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/tickets')} activeOpacity={0.75}>
-              <Ionicons name="shield-checkmark" size={18} color={colors.accent} />
-              <Text style={styles.adminBtnText}>Admin · Support Tickets</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.accent} />
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/tickets')} activeOpacity={0.75}>
+                <Ionicons name="shield-checkmark" size={18} color={colors.accent} />
+                <Text style={styles.adminBtnText}>Admin · Support Tickets</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/prices')} activeOpacity={0.75}>
+                <Ionicons name="trending-up" size={18} color={colors.accent} />
+                <Text style={styles.adminBtnText}>Admin · Sold Prices</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </TouchableOpacity>
+            </>
           )}
           <TouchableOpacity style={styles.supportBtn} onPress={() => setSupportModalVisible(true)} activeOpacity={0.75}>
             <Ionicons name="headset-outline" size={18} color={colors.textSecondary} />

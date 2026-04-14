@@ -106,4 +106,11 @@ export const listingsService = {
       .update({ is_active: isActive })
       .eq('id', id);
   },
+
+  async markListingSold(id: string, soldPrice: string | null) {
+    return supabase.rpc('mark_listing_sold', {
+      p_listing_id: id,
+      p_sold_price: soldPrice || null,
+    });
+  },
 };

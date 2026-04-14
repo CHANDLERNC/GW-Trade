@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -45,6 +47,9 @@ export default function ListingDetailScreen() {
   const [contacting, setContacting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [markingSold, setMarkingSold] = useState(false);
+  const [soldModalVisible, setSoldModalVisible] = useState(false);
+  const [soldPrice, setSoldPrice] = useState('');
   const [commentText, setCommentText] = useState('');
   const [ownerConvoCount, setOwnerConvoCount] = useState(0);
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
@@ -54,9 +59,13 @@ export default function ListingDetailScreen() {
   const isOwner = user?.id === listing?.user_id;
 
   useEffect(() => {
-    if (!listing?.title) return;
-    priceHistoryService.getRecentTrades(listing.title).then(setPriceHistory);
-  }, [listing?.title]);
+    if (!listing) return;
+    if (listing.category === 'keys' && listing.key_name) {
+      priceHistoryService.getKeyPriceHistory(listing.key_name).then(setPriceHistory);
+    } else {
+      setPriceHistory([]);
+    }
+  }, [listing?.key_name, listing?.category]);
 
   useEffect(() => {
     if (!isOwner || !id) return;
@@ -123,30 +132,49 @@ export default function ListingDetailScreen() {
     setToggling(false);
   };
 
+  const handleMarkSoldConfirm = async () => {
+    if (!listing) return;
+    setMarkingSold(true);
+    setSoldModalVisible(false);
+    const { error } = await listingsService.markListingSold(listing.id, soldPrice);
+    setMarkingSold(false);
+    setSoldPrice('');
+    if (error) {
+      Alert.alert('Error', (error as any)?.message ?? 'Could not mark as sold.');
+    } else {
+      Alert.alert('Marked as Sold', 'Your listing has been closed and the sale recorded.', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)/profile') },
+      ]);
+    }
+  };
+
   const showOwnerMenu = () => {
     if (!listing) return;
-    Alert.alert('Manage Listing', undefined, [
+    const options: any[] = [
       { text: 'Edit', onPress: () => router.push(`/listing/edit/${listing.id}`) },
-      {
-        text: listing.is_active ? 'Deactivate' : 'Activate',
-        onPress: () => {
-          if (listing.is_active) {
-            Alert.alert(
-              'Deactivate Listing',
-              'Your listing will be hidden from Browse. You can reactivate it at any time.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Deactivate', style: 'destructive', onPress: handleToggleActive },
-              ]
-            );
-          } else {
-            handleToggleActive();
-          }
-        },
-      },
-      { text: 'Delete', style: 'destructive', onPress: handleDelete },
-      { text: 'Close', style: 'cancel' },
-    ]);
+    ];
+
+    if (listing.is_active) {
+      options.push({
+        text: 'Deactivate',
+        onPress: () =>
+          Alert.alert(
+            'Deactivate Listing',
+            'Your listing will be hidden from Browse. You can reactivate it at any time.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Deactivate', style: 'destructive', onPress: handleToggleActive },
+            ]
+          ),
+      });
+    } else {
+      options.push({ text: 'Activate', onPress: handleToggleActive });
+    }
+
+    options.push({ text: 'Delete', style: 'destructive', onPress: handleDelete });
+    options.push({ text: 'Close', style: 'cancel' });
+
+    Alert.alert('Manage Listing', undefined, options);
   };
 
   const handleSubmitComment = async () => {
@@ -380,7 +408,87 @@ export default function ListingDetailScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {isOwner && listing.is_active && (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.markSoldBtn, markingSold && styles.markSoldBtnDisabled]}
+              onPress={() => { setSoldPrice(listing.want_in_return ?? ''); setSoldModalVisible(true); }}
+              disabled={markingSold}
+              activeOpacity={0.85}
+            >
+              {markingSold ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <Ionicons name="checkmark-circle" size={18} color={colors.background} />
+              )}
+              <Text style={styles.markSoldBtnText}>
+                {markingSold ? 'Saving...' : 'Mark as Sold'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
+
+      {/* Mark as Sold modal */}
+      <Modal
+        visible={soldModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSoldModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.soldModalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.soldModalSheet}>
+            <Text style={styles.soldModalTitle}>Mark as Sold</Text>
+            <Text style={styles.soldModalSubtitle}>
+              {listing?.category === 'keys'
+                ? 'Enter the final price to record in market history.'
+                : 'This will close the listing.'}
+            </Text>
+
+            {listing?.category === 'keys' && (
+              <View style={styles.soldPriceField}>
+                <Text style={styles.soldPriceLabel}>FINAL SOLD PRICE</Text>
+                <TextInput
+                  style={styles.soldPriceInput}
+                  value={soldPrice}
+                  onChangeText={setSoldPrice}
+                  placeholder="e.g. 50,000 Rubles"
+                  placeholderTextColor={colors.textMuted}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleMarkSoldConfirm}
+                />
+              </View>
+            )}
+
+            <View style={styles.soldModalActions}>
+              <TouchableOpacity
+                style={styles.soldCancelBtn}
+                onPress={() => { setSoldModalVisible(false); setSoldPrice(''); }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.soldCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.soldConfirmBtn, markingSold && styles.soldConfirmBtnDisabled]}
+                onPress={handleMarkSoldConfirm}
+                disabled={markingSold}
+                activeOpacity={0.8}
+              >
+                {markingSold ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <Text style={styles.soldConfirmText}>Confirm Sold</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -477,6 +585,79 @@ function createStyles(c: ThemeColors) {
       backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center',
     },
     sendBtnDisabled: { opacity: 0.35 },
+    soldModalOverlay: {
+      flex: 1,
+      backgroundColor: '#00000088',
+      justifyContent: 'flex-end',
+    },
+    soldModalSheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: BorderRadius.xl,
+      borderTopRightRadius: BorderRadius.xl,
+      padding: Spacing.xl,
+      gap: Spacing.md,
+      borderTopWidth: 1,
+      borderColor: c.surfaceBorder,
+    },
+    soldModalTitle: {
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.bold,
+      color: c.text,
+    },
+    soldModalSubtitle: {
+      fontSize: Typography.sizes.sm,
+      color: c.textSecondary,
+      marginTop: -Spacing.xs,
+    },
+    soldPriceField: { gap: Spacing.xs },
+    soldPriceLabel: {
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+      color: c.textMuted,
+      letterSpacing: 1.2,
+    },
+    soldPriceInput: {
+      backgroundColor: c.surfaceElevated,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      fontSize: Typography.sizes.md,
+      color: c.text,
+      height: 48,
+    },
+    soldModalActions: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      marginTop: Spacing.xs,
+    },
+    soldCancelBtn: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      alignItems: 'center',
+    },
+    soldCancelText: {
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.semibold,
+      color: c.textSecondary,
+    },
+    soldConfirmBtn: {
+      flex: 2,
+      paddingVertical: Spacing.md,
+      borderRadius: BorderRadius.md,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+    },
+    soldConfirmBtnDisabled: { opacity: 0.5 },
+    soldConfirmText: {
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.bold,
+      color: c.background,
+    },
     convosBtn: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -504,6 +685,12 @@ function createStyles(c: ThemeColors) {
     },
     messageBtnDisabled: { opacity: 0.5 },
     messageBtnText: { fontSize: Typography.sizes.md, fontWeight: Typography.weights.bold, color: c.background, letterSpacing: 0.3 },
+    markSoldBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: Spacing.sm, backgroundColor: c.accent, borderRadius: BorderRadius.md, paddingVertical: 14,
+    },
+    markSoldBtnDisabled: { opacity: 0.5 },
+    markSoldBtnText: { fontSize: Typography.sizes.md, fontWeight: Typography.weights.bold, color: c.background, letterSpacing: 0.3 },
     inactivePill: {
       backgroundColor: c.danger + '22', borderRadius: BorderRadius.sm,
       paddingHorizontal: Spacing.sm, paddingVertical: 4,
