@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemeColors, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
@@ -17,7 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLFG } from '@/hooks/useLFG';
 import { LFGCard } from '@/components/lfg/LFGCard';
 import { CreateLFGSheet } from '@/components/lfg/CreateLFGSheet';
-import { lfgService, lfgPostDurationHours } from '@/services/lfg.service';
+import { lfgService, lfgPostDurationHours, lfgPostLimit } from '@/services/lfg.service';
 import { FACTION_LIST } from '@/constants/factions';
 import { FactionSlug, LFGFilters, LFGZone, LFGRegion, LFGPost } from '@/types';
 
@@ -44,9 +45,29 @@ export default function LFGScreen() {
   const { user, profile } = useAuth();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const { openCreate } = useLocalSearchParams<{ openCreate?: string }>();
+
   const [showCreate, setShowCreate] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
   const [factionFilter, setFactionFilter] = useState<FactionFilter>('all');
   const [zoneFilter, setZoneFilter] = useState<ZoneFilter>('all');
+  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (showBanner) {
+      bannerTimer.current = setTimeout(() => setShowBanner(false), 5000);
+    }
+    return () => {
+      if (bannerTimer.current) clearTimeout(bannerTimer.current);
+    };
+  }, [showBanner]);
+
+  useEffect(() => {
+    if (openCreate === '1') {
+      setShowCreate(true);
+      router.setParams({ openCreate: undefined });
+    }
+  }, [openCreate]);
 
   const filters: LFGFilters = useMemo(() => ({
     faction: factionFilter === 'all' ? undefined : factionFilter,
@@ -60,10 +81,10 @@ export default function LFGScreen() {
     await lfgService.deactivatePost(postId);
   }, [removePost]);
 
-  const postDurationHours = lfgPostDurationHours(
-    profile?.is_lifetime_member ?? false,
-    profile?.is_member ?? false
-  );
+  const isLifetime = profile?.is_lifetime_member ?? false;
+  const isMember = profile?.is_member ?? false;
+  const postDurationHours = lfgPostDurationHours(isLifetime, isMember);
+  const postLimit = lfgPostLimit(isLifetime, isMember);
 
   const handleSubmit = useCallback(async (form: {
     faction: FactionSlug;
@@ -74,18 +95,22 @@ export default function LFGScreen() {
     mic_required: boolean;
   }) => {
     if (!user) return;
-    const { data, error } = await lfgService.createPost(user.id, {
+    const { data, error, limitReached } = await lfgService.createPost(user.id, {
       ...form,
-      isLifetimeMember: profile?.is_lifetime_member ?? false,
-      isMember: profile?.is_member ?? false,
+      isLifetimeMember: isLifetime,
+      isMember,
     });
+    if (limitReached) return; // UI already blocks the button; silent guard
     if (!error && data) {
       prependPost(data);
       setShowCreate(false);
+      setShowBanner(true);
+      refetch();
     }
-  }, [user, profile, prependPost]);
+  }, [user, isLifetime, isMember, prependPost, refetch]);
 
-  const myPost = posts.find((p) => p.user_id === user?.id);
+  const myPosts = posts.filter((p) => p.user_id === user?.id);
+  const atLimit = myPosts.length >= postLimit;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -103,30 +128,34 @@ export default function LFGScreen() {
         <TouchableOpacity
           style={[
             styles.postBtn,
-            myPost && styles.postBtnActive,
+            myPosts.length > 0 && styles.postBtnActive,
+            atLimit && styles.postBtnLimit,
           ]}
-          onPress={() => setShowCreate(true)}
+          onPress={() => !atLimit && setShowCreate(true)}
           activeOpacity={0.8}
         >
           <Ionicons
-            name={myPost ? 'checkmark-circle' : 'add-circle-outline'}
+            name={atLimit ? 'checkmark-circle' : 'add-circle-outline'}
             size={16}
-            color={myPost ? colors.success : colors.accent}
+            color={atLimit ? colors.success : myPosts.length > 0 ? colors.success : colors.accent}
           />
-          <Text style={[styles.postBtnText, myPost && { color: colors.success }]}>
-            {myPost ? 'Posted' : 'Post LFG'}
+          <Text style={[
+            styles.postBtnText,
+            myPosts.length > 0 && { color: colors.success },
+          ]}>
+            {atLimit ? `${myPosts.length}/${postLimit}` : myPosts.length > 0 ? `${myPosts.length}/${postLimit}` : 'Post LFG'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* My active post banner */}
-      {myPost && (
+      {showBanner && myPosts.length > 0 && (
         <View style={[styles.myPostBanner, { borderColor: colors.success + '55' }]}>
           <Ionicons name="radio-outline" size={14} color={colors.success} />
           <Text style={styles.myPostBannerText}>
-            Your post is live — operators can message you
+            Post live — operators can message you
           </Text>
-          <TouchableOpacity onPress={() => handleClose(myPost.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity onPress={() => setShowBanner(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="close" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
@@ -238,6 +267,8 @@ export default function LFGScreen() {
         onSubmit={handleSubmit}
         initialFaction={factionFilter !== 'all' ? factionFilter : undefined}
         postDurationHours={postDurationHours}
+        activePostCount={myPosts.length}
+        postLimit={postLimit}
       />
     </SafeAreaView>
   );
@@ -278,6 +309,9 @@ function createStyles(c: ThemeColors) {
     postBtnActive: {
       borderColor: c.success + '60',
       backgroundColor: c.success + '10',
+    },
+    postBtnLimit: {
+      opacity: 0.6,
     },
     postBtnText: {
       fontSize: Typography.sizes.sm,

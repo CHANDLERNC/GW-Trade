@@ -49,9 +49,11 @@ interface Props {
   }) => Promise<void>;
   initialFaction?: FactionSlug;
   postDurationHours: number;
+  activePostCount: number;
+  postLimit: number;
 }
 
-export function CreateLFGSheet({ visible, onClose, onSubmit, initialFaction, postDurationHours }: Props) {
+export function CreateLFGSheet({ visible, onClose, onSubmit, initialFaction, postDurationHours, activePostCount, postLimit }: Props) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -249,17 +251,18 @@ export function CreateLFGSheet({ visible, onClose, onSubmit, initialFaction, pos
             />
             <Text style={styles.charCount}>{description.length}/200</Text>
 
-            {/* Duration notice */}
+            {/* Duration / limit notice */}
             <View style={styles.durationRow}>
               <Ionicons name="time-outline" size={13} color={colors.textMuted} />
               <Text style={styles.durationText}>
-                Your post stays live for{' '}
+                Post stays live for{' '}
                 <Text style={{ color: colors.accent, fontWeight: Typography.weights.bold }}>
                   {postDurationHours}h
                 </Text>
-                {postDurationHours === 12 && (
-                  <Text style={{ color: colors.textMuted }}> — upgrade for up to 48h</Text>
-                )}
+                {'  ·  '}
+                <Text style={{ color: colors.textMuted }}>
+                  {activePostCount}/{postLimit} slots used
+                </Text>
               </Text>
             </View>
 

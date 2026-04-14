@@ -2,10 +2,18 @@ import { supabase } from '@/lib/supabase';
 import { LFGPost, LFGFilters } from '@/types';
 import { LFG_PROFILE_FIELDS } from '@/constants/queries';
 
-export function lfgPostDurationHours(isLifetimeMember: boolean, isMember: boolean): number {
-  if (isLifetimeMember) return 48;
-  if (isMember) return 24;
-  return 12;
+// All tiers now use 24h duration; tier determines how many active posts are allowed
+export const LFG_POST_DURATION_HOURS = 24;
+
+export function lfgPostDurationHours(_isLifetimeMember: boolean, _isMember: boolean): number {
+  return LFG_POST_DURATION_HOURS;
+}
+
+// Post limits: non-member=2, member=5, lifetime=10
+export function lfgPostLimit(isLifetimeMember: boolean, isMember: boolean): number {
+  if (isLifetimeMember) return 10;
+  if (isMember) return 5;
+  return 2;
 }
 
 export const lfgService = {
@@ -43,16 +51,21 @@ export const lfgService = {
       isLifetimeMember: boolean;
       isMember: boolean;
     }
-  ): Promise<{ data: LFGPost | null; error: any }> {
-    const hours = lfgPostDurationHours(post.isLifetimeMember, post.isMember);
-    const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+  ): Promise<{ data: LFGPost | null; error: any; limitReached?: boolean }> {
+    const limit = lfgPostLimit(post.isLifetimeMember, post.isMember);
+    const expiresAt = new Date(Date.now() + LFG_POST_DURATION_HOURS * 60 * 60 * 1000).toISOString();
 
-    // Deactivate any existing active posts by this user first
-    await supabase
+    // Check how many active posts the user currently has
+    const { count } = await supabase
       .from('lfg_posts')
-      .update({ is_active: false })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString());
+
+    if ((count ?? 0) >= limit) {
+      return { data: null, error: null, limitReached: true };
+    }
 
     const { data, error } = await supabase
       .from('lfg_posts')
@@ -80,14 +93,14 @@ export const lfgService = {
     return { error };
   },
 
-  async getMyActivePost(userId: string): Promise<LFGPost | null> {
+  async getMyActivePosts(userId: string): Promise<LFGPost[]> {
     const { data } = await supabase
       .from('lfg_posts')
       .select(`*, profiles:user_id (${LFG_PROFILE_FIELDS})`)
       .eq('user_id', userId)
       .eq('is_active', true)
       .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
-    return data as LFGPost | null;
+      .order('created_at', { ascending: false });
+    return (data as LFGPost[]) ?? [];
   },
 };

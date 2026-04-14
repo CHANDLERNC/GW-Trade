@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,29 @@ import { useAuth } from '@/context/AuthContext';
 import { FACTIONS } from '@/constants/factions';
 import { LFGPost, LFGZone } from '@/types';
 import { messagesService } from '@/services/messages.service';
-import { useState } from 'react';
 import { timeAgo } from '@/utils/dateFormat';
+
+function useCountdown(expiresAt: string): string {
+  const [label, setLabel] = useState(() => getLabel(expiresAt));
+
+  useEffect(() => {
+    setLabel(getLabel(expiresAt));
+    const id = setInterval(() => setLabel(getLabel(expiresAt)), 60_000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+
+  return label;
+}
+
+function getLabel(expiresAt: string): string {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return 'Expired';
+  const totalMins = Math.floor(diff / 60_000);
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (hrs >= 1) return `${hrs}h ${mins}m`;
+  return `${mins}m`;
+}
 
 const ZONE_LABELS: Record<LFGZone, string> = {
   any: 'Any Zone',
@@ -61,6 +82,7 @@ export function LFGCard({ post, onClose }: Props) {
   const isOwn = user?.id === post.user_id;
   const displayName = post.profiles?.display_name ?? post.profiles?.username ?? 'Operator';
   const nameColor = post.profiles?.display_name_color ?? colors.text;
+  const timeLeft = useCountdown(post.expires_at);
 
   async function handleContact() {
     if (!user || isOwn) return;
@@ -153,6 +175,10 @@ export function LFGCard({ post, onClose }: Props) {
 
         {/* Action row */}
         <View style={styles.actionRow}>
+          <View style={styles.timerBadge}>
+            <Ionicons name="time-outline" size={10} color={colors.textMuted} />
+            <Text style={styles.timerText}>{timeLeft}</Text>
+          </View>
           {isOwn ? (
             <TouchableOpacity
               style={styles.closeBtn}
@@ -281,8 +307,18 @@ function createStyles(c: ThemeColors) {
     },
     actionRow: {
       flexDirection: 'row',
-      justifyContent: 'flex-end',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       marginTop: 2,
+    },
+    timerBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+    timerText: {
+      fontSize: Typography.sizes.xs,
+      color: c.textMuted,
     },
     contactBtn: {
       flexDirection: 'row',

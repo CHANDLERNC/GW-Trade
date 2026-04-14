@@ -15,7 +15,7 @@ export function useLFG(filters: LFGFilters = {}) {
   }, [setPosts]);
 
   const prependPost = useCallback((post: LFGPost) => {
-    setPosts((prev) => [post, ...prev.filter((p) => p.user_id !== post.user_id)]);
+    setPosts((prev) => [post, ...prev]);
   }, [setPosts]);
 
   return { posts, loading, refreshing, refetch, removePost, prependPost };

@@ -4,6 +4,20 @@ All notable changes to GZW Market are documented here.
 
 ---
 
+## [1.2.0] — 2026-04-14
+
+### Changed
+- **LFG post limits by tier** — non-member: 2 active posts, member: 5, lifetime: 10 (previously 1 for all tiers)
+- **LFG post duration** — flat 24h for all tiers (previously 12h / 24h / 48h by tier)
+- **LFG post creation** — creating a new post no longer auto-deactivates previous ones; blocked at the tier limit instead
+
+### Added
+- **LFG countdown timer** — each card now shows live time remaining (e.g. `23h 47m`) in the action row
+- **LFG slot counter** — post button shows `active/limit` count (e.g. `2/5`); dims and disables when limit is reached
+- **LFG create sheet** — duration notice now shows `Xh · used/limit slots`
+
+---
+
 ## [1.1.0] — 2026-04-13
 
 ### Added
