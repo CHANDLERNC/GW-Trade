@@ -52,6 +52,14 @@ function RootLayoutInner() {
             headerBackTitle: 'Back',
           }}
         />
+        <Stack.Screen
+          name="price-history/[item]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="price-history/category/[cat]"
+          options={{ headerShown: false }}
+        />
       </Stack>
     </AuthProvider>
   );

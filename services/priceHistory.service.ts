@@ -44,4 +44,37 @@ export const priceHistoryService = {
   async adminDelete(id: string) {
     return supabase.from('price_history').delete().eq('id', id);
   },
+
+  // Home feed: fetch the most recent completed key trades (price tracking for keys only).
+  async getRecentCompletedTrades(limit = 20): Promise<PriceHistoryEntry[]> {
+    const { data } = await supabase
+      .from('price_history')
+      .select('*')
+      .eq('category', 'keys')
+      .order('completed_at', { ascending: false })
+      .limit(limit);
+    return (data ?? []) as PriceHistoryEntry[];
+  },
+
+  // Category list: recent completed trades for an entire category (deduplicated by caller).
+  async getRecentByCategory(category: string, limit = 60): Promise<PriceHistoryEntry[]> {
+    const { data } = await supabase
+      .from('price_history')
+      .select('*')
+      .eq('category', category)
+      .order('completed_at', { ascending: false })
+      .limit(limit);
+    return (data ?? []) as PriceHistoryEntry[];
+  },
+
+  // Price history detail: all completed trades for a specific item name.
+  async getItemPriceHistory(itemName: string, limit = 30): Promise<PriceHistoryEntry[]> {
+    const { data } = await supabase
+      .from('price_history')
+      .select('*')
+      .eq('item_name', itemName)
+      .order('completed_at', { ascending: false })
+      .limit(limit);
+    return (data ?? []) as PriceHistoryEntry[];
+  },
 };

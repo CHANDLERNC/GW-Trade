@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 
+const POST_BTN_SIZE = 41;
+
 export default function TabLayout() {
   const { session, loading, user } = useAuth();
   const { colors } = useTheme();
@@ -35,7 +37,7 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.surfaceBorder,
           borderTopWidth: 1,
-          height: 83,
+          height: 95,
           paddingTop: 9,
           paddingBottom: 14,
         },
@@ -44,9 +46,7 @@ export default function TabLayout() {
           fontWeight: '600',
           marginTop: 2,
         },
-        tabBarIconStyle: {
-          marginBottom: 0,
-        },
+        tabBarIconStyle: {},
       }}
     >
       {/* ── Left 3 ── */}
@@ -86,9 +86,9 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <View
               style={{
-                width: 41,
-                height: 41,
-                borderRadius: 21,
+                width: POST_BTN_SIZE,
+                height: POST_BTN_SIZE,
+                borderRadius: POST_BTN_SIZE / 2,
                 backgroundColor: focused ? colors.accent : colors.accentDim,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -98,7 +98,7 @@ export default function TabLayout() {
             </View>
           ),
           tabBarLabel: ({ focused }) => (
-            <View style={{ marginTop: 0 }}>
+            <View>
               <Ionicons
                 name="ellipse"
                 size={5}

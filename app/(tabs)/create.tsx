@@ -69,16 +69,16 @@ export default function CreateScreen() {
     } else {
       if (!title.trim()) e.title = 'Title is required.';
     }
+    if (!wantInReturn.trim()) e.wantInReturn = 'Enter what you want in return — this is your asking price.';
     const qty = parseInt(quantity, 10);
     if (isNaN(qty) || qty < 1) e.quantity = 'Enter a valid quantity.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (!validate() || !user) return;
+  const doPost = async () => {
+    if (!user) return;
     setLoading(true);
-
     const listingTitle = isKeyCategory ? selectedKey!.name : title.trim();
     const keyName = isKeyCategory ? selectedKey!.name : null;
 
@@ -87,7 +87,7 @@ export default function CreateScreen() {
       title: listingTitle,
       key_name: keyName,
       description: description.trim() || null,
-      want_in_return: wantInReturn.trim() || null,
+      want_in_return: wantInReturn.trim(),
       quantity: parseInt(quantity, 10),
       category: category!,
       faction: faction!,
@@ -115,6 +115,19 @@ export default function CreateScreen() {
         },
       ]);
     }
+  };
+
+  const handleSubmit = () => {
+    if (!validate() || !user) return;
+    const listingTitle = isKeyCategory ? selectedKey!.name : title.trim();
+    Alert.alert(
+      'Confirm Listing',
+      `Post "${listingTitle}" asking for "${wantInReturn.trim()}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Post Listing', onPress: doPost },
+      ]
+    );
   };
 
   return (
@@ -243,11 +256,12 @@ export default function CreateScreen() {
                 maxLength={500}
               />
               <Input
-                label="Want in Return"
+                label="Want in Return *"
                 value={wantInReturn}
                 onChangeText={setWantInReturn}
                 placeholder="e.g. Rubles, Level 4 armor, or offers"
-                hint="Rubles is GZW's in-game currency — or describe gear you want"
+                hint="Required — Rubles is GZW's in-game currency, or describe gear you want"
+                error={errors.wantInReturn}
                 maxLength={200}
               />
               <Input

@@ -24,8 +24,9 @@ import { FACTION_LIST } from '@/constants/factions';
 import { CATEGORY_LIST, CATEGORY_META, TACTICAL_STATUS } from '@/constants/categories';
 import { resolveNameColor } from '@/constants/nameColors';
 import { listingsService } from '@/services/listings.service';
+import { priceHistoryService } from '@/services/priceHistory.service';
 import { timeAgo } from '@/utils/dateFormat';
-import { Category, FactionSlug, Listing } from '@/types';
+import { Category, FactionSlug, Listing, PriceHistoryEntry } from '@/types';
 
 function getRandomStatus(): string {
   return TACTICAL_STATUS[Math.floor(Math.random() * TACTICAL_STATUS.length)];
@@ -45,6 +46,7 @@ export default function HomeScreen() {
   const { counts, refetch: refetchCounts } = useListingCounts();
   const [refreshing, setRefreshing] = useState(false);
   const [recentListings, setRecentListings] = useState<Listing[]>([]);
+  const [completedTrades, setCompletedTrades] = useState<PriceHistoryEntry[]>([]);
   const [statusLine, setStatusLine] = useState(getRandomStatus);
   const [now, setNow] = useState(new Date());
   const [use24hr, setUse24hr] = useState(true);
@@ -71,8 +73,12 @@ export default function HomeScreen() {
   const totalListings = counts.keys + counts.gear + counts.items;
 
   const fetchRecent = useCallback(async () => {
-    const { data } = await listingsService.getListings({ activeOnly: true });
-    setRecentListings(((data as Listing[]) ?? []).slice(0, 8));
+    const [listingsResult, trades] = await Promise.all([
+      listingsService.getListings({ activeOnly: true }),
+      priceHistoryService.getRecentCompletedTrades(20),
+    ]);
+    setRecentListings(((listingsResult.data as Listing[]) ?? []).slice(0, 8));
+    setCompletedTrades(trades);
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -204,6 +210,73 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Completed Trades Feed — grouped by category */}
+        {completedTrades.length > 0 && (
+          <View style={styles.completedSection}>
+            <View style={styles.recentHeader}>
+              <View style={styles.completedLabelRow}>
+                <View style={styles.completedPulse} />
+                <Text style={styles.sectionLabel}>COMPLETED TRADES</Text>
+              </View>
+            </View>
+            {CATEGORY_LIST.map((cat) => {
+              const group = completedTrades.filter((t) => t.category === cat.id);
+              if (group.length === 0) return null;
+              const meta = CATEGORY_META[cat.id];
+              return (
+                <View key={cat.id} style={styles.completedGroup}>
+                  <View style={styles.completedGroupHeader}>
+                    <Ionicons name={meta.icon as any} size={12} color={meta.color} />
+                    <Text style={[styles.completedGroupLabel, { color: meta.color }]}>
+                      {cat.name.toUpperCase()}
+                    </Text>
+                  </View>
+                  <FlatList
+                    data={group}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.recentList}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.completedCard}
+                        activeOpacity={0.8}
+                        onPress={() =>
+                          router.push(
+                            `/price-history/${encodeURIComponent(item.item_name)}?category=${item.category ?? ''}`
+                          )
+                        }
+                      >
+                        <View style={[styles.completedCardTop, { borderBottomColor: meta.color + '55' }]}>
+                          <View style={[styles.completedCatPill, { backgroundColor: meta.color + '22' }]}>
+                            <Ionicons name={meta.icon as any} size={11} color={meta.color} />
+                            <Text style={[styles.completedCatText, { color: meta.color }]}>
+                              {cat.name.toUpperCase()}
+                            </Text>
+                          </View>
+                          <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+                        </View>
+                        <View style={styles.completedCardBody}>
+                          <Text style={styles.completedItemName} numberOfLines={2}>{item.item_name}</Text>
+                          {item.want_in_return ? (
+                            <Text style={styles.completedPrice} numberOfLines={1}>
+                              for {item.want_in_return}
+                            </Text>
+                          ) : null}
+                          <Text style={styles.completedTime}>{timeAgo(item.completed_at)}</Text>
+                        </View>
+                        <View style={styles.completedFooter}>
+                          <Text style={styles.completedFooterText}>Avg prices →</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Categories */}
         <View style={styles.section}>
@@ -496,6 +569,68 @@ function createStyles(c: ThemeColors) {
     },
     emptyMarketText: { fontSize: Typography.sizes.sm, color: c.textSecondary, textAlign: 'center' },
     emptyMarketLink: { fontSize: Typography.sizes.sm, color: c.accent, fontWeight: Typography.weights.semibold },
+    completedSection: { marginBottom: Spacing.xl, gap: Spacing.md },
+    completedLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    completedPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.success },
+    completedGroup: { gap: Spacing.xs },
+    completedGroupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.lg,
+    },
+    completedGroupLabel: {
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+      letterSpacing: 1,
+    },
+    completedCard: {
+      width: 156,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.lg,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      overflow: 'hidden',
+    },
+    completedCardTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+    },
+    completedCatPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      borderRadius: BorderRadius.full,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    completedCatText: { fontSize: 9, fontWeight: Typography.weights.bold, letterSpacing: 0.8 },
+    completedCheckBadge: {},
+    completedCardBody: { padding: Spacing.sm, gap: 3 },
+    completedItemName: {
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.bold,
+      color: c.text,
+      lineHeight: 17,
+    },
+    completedPrice: { fontSize: 11, color: c.accent, fontWeight: Typography.weights.semibold },
+    completedTime: { fontSize: 10, color: c.textMuted, marginTop: 1 },
+    completedFooter: {
+      borderTopWidth: 1,
+      borderTopColor: c.surfaceBorder,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 5,
+    },
+    completedFooterText: {
+      fontSize: 10,
+      color: c.accent,
+      fontWeight: Typography.weights.semibold,
+      letterSpacing: 0.3,
+    },
     recentSection: { marginBottom: Spacing.xl, gap: Spacing.md },
     recentHeader: {
       flexDirection: 'row',
