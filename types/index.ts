@@ -147,7 +147,35 @@ export type ListingFilters = {
   search?: string;
   userId?: string;
   activeOnly?: boolean;
+  excludeUserIds?: string[];
 };
+
+export interface Block {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+}
+
+export interface Report {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  listing_id: string | null;
+  reason: 'scam' | 'harassment' | 'spam' | 'inappropriate' | 'other';
+  details: string | null;
+  created_at: string;
+}
+
+export interface PriceHistoryEntry {
+  id: string;
+  item_name: string;
+  want_in_return: string | null;
+  faction: FactionSlug | null;
+  category: Category | null;
+  listing_id: string | null;
+  completed_at: string;
+}
 
 // ── LFG ───────────────────────────────────────────────────────────────────────
 export type LFGZone =

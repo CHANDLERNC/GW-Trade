@@ -24,9 +24,11 @@ import { useListing } from '@/hooks/useListings';
 import { useComments } from '@/hooks/useComments';
 import { listingsService } from '@/services/listings.service';
 import { messagesService } from '@/services/messages.service';
+import { priceHistoryService } from '@/services/priceHistory.service';
 import { useAuth } from '@/context/AuthContext';
 import { FACTIONS } from '@/constants/factions';
 import { timeAgo } from '@/utils/dateFormat';
+import { PriceHistoryEntry } from '@/types';
 import { CommentBubble } from '@/components/listings/CommentBubble';
 import { ListingDetailSkeleton } from '@/components/listings/ListingDetailSkeleton';
 
@@ -45,10 +47,16 @@ export default function ListingDetailScreen() {
   const [toggling, setToggling] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [ownerConvoCount, setOwnerConvoCount] = useState(0);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
 
   const { comments, posting, addComment, deleteComment } = useComments(id ?? '');
 
   const isOwner = user?.id === listing?.user_id;
+
+  useEffect(() => {
+    if (!listing?.title) return;
+    priceHistoryService.getRecentTrades(listing.title).then(setPriceHistory);
+  }, [listing?.title]);
 
   useEffect(() => {
     if (!isOwner || !id) return;
@@ -248,6 +256,29 @@ export default function ListingDetailScreen() {
             </View>
           ) : null}
 
+          {priceHistory.length > 0 && (
+            <View style={styles.priceHistoryBox}>
+              <View style={styles.priceHistoryHeader}>
+                <Ionicons name="trending-up" size={14} color={colors.accent} />
+                <Text style={styles.priceHistoryLabel}>RECENT TRADES FOR THIS ITEM</Text>
+              </View>
+              {priceHistory.map((entry) => (
+                <View key={entry.id} style={styles.priceHistoryRow}>
+                  <View style={styles.priceHistoryItem}>
+                    <Text style={styles.priceHistoryItemName} numberOfLines={1}>{entry.item_name}</Text>
+                    {entry.want_in_return ? (
+                      <View style={styles.priceHistoryWant}>
+                        <Ionicons name="swap-horizontal" size={12} color={colors.textMuted} />
+                        <Text style={styles.priceHistoryWantText} numberOfLines={1}>{entry.want_in_return}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text style={styles.priceHistoryTime}>{timeAgo(entry.completed_at)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           <View style={styles.sellerBox}>
             <Text style={styles.sellerSectionLabel}>SELLER</Text>
             <TouchableOpacity
@@ -391,6 +422,21 @@ function createStyles(c: ThemeColors) {
     },
     descLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
     descText: { fontSize: Typography.sizes.md, color: c.textSecondary, lineHeight: 24 },
+    priceHistoryBox: {
+      backgroundColor: c.surface, borderRadius: BorderRadius.lg,
+      borderWidth: 1, borderColor: c.surfaceBorder, padding: Spacing.md, gap: Spacing.sm,
+    },
+    priceHistoryHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    priceHistoryLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold, color: c.accent, textTransform: 'uppercase', letterSpacing: 0.5 },
+    priceHistoryRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingVertical: Spacing.xs, borderTopWidth: 1, borderTopColor: c.surfaceBorder,
+    },
+    priceHistoryItem: { flex: 1, gap: 2 },
+    priceHistoryItemName: { fontSize: Typography.sizes.sm, color: c.text, fontWeight: Typography.weights.medium },
+    priceHistoryWant: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    priceHistoryWantText: { fontSize: Typography.sizes.xs, color: c.textMuted, flex: 1 },
+    priceHistoryTime: { fontSize: Typography.sizes.xs, color: c.textMuted, marginLeft: Spacing.sm },
     sellerBox: {
       backgroundColor: c.surface, borderRadius: BorderRadius.lg,
       borderWidth: 1, borderColor: c.surfaceBorder, padding: Spacing.md, gap: Spacing.md,

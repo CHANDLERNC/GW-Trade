@@ -33,6 +33,9 @@ export const listingsService = {
     if (filters.search?.trim()) {
       query = query.ilike('title', `%${filters.search.trim()}%`);
     }
+    if (filters.excludeUserIds?.length) {
+      query = query.not('user_id', 'in', `(${filters.excludeUserIds.join(',')})`);
+    }
 
     return query;
   },

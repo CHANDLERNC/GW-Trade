@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StatusBar,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
@@ -21,10 +22,12 @@ import { MemberIcon } from '@/components/ui/MemberIcon';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { useAuth } from '@/context/AuthContext';
 import { useListings } from '@/hooks/useListings';
+import { useBlocks } from '@/hooks/useBlocks';
 import { profileService } from '@/services/profile.service';
 import { messagesService } from '@/services/messages.service';
+import { safetyService } from '@/services/safety.service';
 import { resolveNameColor } from '@/constants/nameColors';
-import { Profile } from '@/types';
+import { Profile, Report } from '@/types';
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,6 +36,7 @@ export default function PublicProfileScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation();
 
+  const { blockUser, unblockUser, isBlocked } = useBlocks();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,12 +61,68 @@ export default function PublicProfileScreen() {
     setRefreshing(false);
   }, [loadProfile, refetchListings]);
 
+  const showSafetyMenu = useCallback(() => {
+    if (!id || isOwnProfile) return;
+    const blocked = isBlocked(id);
+    Alert.alert(blocked ? 'Unblock Operator' : 'Operator Options', undefined, [
+      {
+        text: blocked ? 'Unblock' : 'Block',
+        style: blocked ? 'default' : 'destructive',
+        onPress: async () => {
+          if (blocked) {
+            await unblockUser(id);
+          } else {
+            Alert.alert('Block Operator', 'Their listings will be hidden from browse. Continue?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Block', style: 'destructive', onPress: () => blockUser(id) },
+            ]);
+          }
+        },
+      },
+      {
+        text: 'Report',
+        onPress: () => {
+          Alert.alert('Report Operator', 'Why are you reporting this operator?', [
+            { text: 'Scam / Fraud', onPress: () => submitReport('scam') },
+            { text: 'Harassment', onPress: () => submitReport('harassment') },
+            { text: 'Spam', onPress: () => submitReport('spam') },
+            { text: 'Inappropriate', onPress: () => submitReport('inappropriate') },
+            { text: 'Other', onPress: () => submitReport('other') },
+            { text: 'Cancel', style: 'cancel' },
+          ]);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [id, isOwnProfile, isBlocked, blockUser, unblockUser]);
+
+  const submitReport = async (reason: Report['reason']) => {
+    if (!id) return;
+    const { error } = await safetyService.reportUser(id, reason) as any;
+    if (error?.code === '23505') {
+      Alert.alert('Already Reported', 'You have already reported this operator.');
+    } else if (!error) {
+      Alert.alert('Report Submitted', 'Thank you. Our team will review this operator.');
+    }
+  };
+
   useLayoutEffect(() => {
     if (!profile) return;
     navigation.setOptions({
       headerTitle: profile.display_name ?? profile.username,
+      headerRight: !isOwnProfile
+        ? () => (
+            <TouchableOpacity
+              onPress={showSafetyMenu}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{ marginRight: Spacing.sm }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={22} color={colors.text} />
+            </TouchableOpacity>
+          )
+        : undefined,
     });
-  }, [profile, navigation]);
+  }, [profile, navigation, isOwnProfile, showSafetyMenu, colors]);
 
   const handleMessage = async () => {
     if (!user || !id || isOwnProfile) return;
