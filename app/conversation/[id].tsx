@@ -182,7 +182,7 @@ export default function ConversationScreen() {
     );
   };
 
-  const handleSubmitRating = async (isPositive: boolean) => {
+  const handleSubmitRating = async (isPositive: boolean | null) => {
     if (!trade || !user || !partnerId) return;
     const { error } = await tradesService.submitRating(trade.id, user.id, partnerId, isPositive);
     if (error) {

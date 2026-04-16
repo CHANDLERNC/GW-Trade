@@ -80,7 +80,7 @@ export interface TradeRating {
   trade_id: string;
   rater_id: string;
   rated_id: string;
-  is_positive: boolean;
+  is_positive: boolean | null; // null = neutral ("trade completed, no strong opinion")
   created_at: string;
 }
 

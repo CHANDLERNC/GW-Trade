@@ -68,7 +68,7 @@ export const tradesService = {
     tradeId: string,
     raterId: string,
     ratedId: string,
-    isPositive: boolean,
+    isPositive: boolean | null,
   ): Promise<{ data: TradeRating | null; error: Error | null }> {
     const { data, error } = await supabase
       .from('trade_ratings')
@@ -166,7 +166,7 @@ async function notifyRatedPlayer(raterId: string, ratedId: string, isPositive: b
   if (!rated?.push_token) return;
 
   const name = rater?.username ?? 'A trader';
-  const sentiment = isPositive ? 'positive' : 'negative';
+  const sentiment = isPositive === true ? 'positive' : isPositive === false ? 'negative' : 'neutral';
 
   await notificationsService.sendPushNotification(
     rated.push_token,
