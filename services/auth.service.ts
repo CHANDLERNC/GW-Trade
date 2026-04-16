@@ -41,4 +41,8 @@ export const authService = {
       redirectTo: 'gzwmarket://reset-password',
     });
   },
+
+  async deleteAccount() {
+    return supabase.rpc('delete_my_account');
+  },
 };

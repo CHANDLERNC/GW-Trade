@@ -10,7 +10,14 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gzwmarket.app"
+      "bundleIdentifier": "com.gzwmarket.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "GZW Market uses your camera to upload listing photos.",
+        "NSPhotoLibraryUsageDescription": "GZW Market accesses your photo library to upload listing photos.",
+        "NSPhotoLibraryAddUsageDescription": "GZW Market saves photos to your library.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.gzwmarket.app",
@@ -21,7 +28,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -54,6 +64,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f050de5e-41e9-4106-81e1-87622ebd15e7"
+      }
+    },
+    "owner": "chandlernic"
   }
 }

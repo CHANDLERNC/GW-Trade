@@ -19,7 +19,7 @@ export const MEMBERSHIP = {
 } as const;
 
 // ── Early adopter window ──────────────────────────────────────────────────────
-export const EARLY_ACCESS_END = new Date('2026-05-02T23:59:59Z');
+export const EARLY_ACCESS_END = new Date('2026-06-30T23:59:59Z');
 export const EARLY_ACCESS_DURATION_DAYS = 30;
 
 // ── RevenueCat product IDs (not yet active — MONETIZATION_ENABLED = false) ───

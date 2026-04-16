@@ -1,0 +1,37 @@
+{
+  "cli": {
+    "version": ">= 18.7.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "resourceClass": "m-medium"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleTeamId": "68T9SH3B72",
+        "ascApiKeyId": "WVVNX2RAX6",
+        "ascApiKeyIssuerId": "b498221a-696c-434c-9043-4e394879b8fa",
+        "ascApiKeyPath": "./AuthKey_WVVNX2RAX6.p8"
+      }
+    }
+  }
+}

@@ -44,6 +44,7 @@ export default function ProfileScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [membershipModalVisible, setMembershipModalVisible] = useState(false);
   const [supportModalVisible, setSupportModalVisible] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editBio, setEditBio] = useState('');
@@ -93,6 +94,41 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account, all listings, messages, and trade history. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete My Account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you absolutely sure?',
+              'Type DELETE to confirm — this action is permanent.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete Everything',
+                  style: 'destructive',
+                  onPress: async () => {
+                    const { error } = await authService.deleteAccount();
+                    if (error) {
+                      Alert.alert('Error', 'Could not delete account. Please contact support.');
+                    } else {
+                      await authService.signOut();
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   const displayName = profile?.display_name ?? profile?.username ?? '—';
 
   return (
@@ -127,10 +163,15 @@ export default function ProfileScreen() {
               </View>
               <Text style={styles.username} numberOfLines={1}>@{profile?.username}</Text>
             </View>
-            <TouchableOpacity style={styles.editBtn} onPress={openEditModal} activeOpacity={0.75}>
-              <Ionicons name="pencil" size={16} color={colors.textSecondary} />
-              <Text style={styles.editBtnText}>Edit</Text>
-            </TouchableOpacity>
+            <View style={styles.headerBtns}>
+              <TouchableOpacity style={styles.editBtn} onPress={openEditModal} activeOpacity={0.75}>
+                <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+                <Text style={styles.editBtnText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.moreBtn} onPress={() => setMoreMenuVisible(true)} activeOpacity={0.75}>
+                <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {profile?.faction_preference && (
@@ -303,6 +344,34 @@ export default function ProfileScreen() {
         visible={supportModalVisible}
         onClose={() => setSupportModalVisible(false)}
       />
+
+      {/* More Menu */}
+      <Modal
+        visible={moreMenuVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMoreMenuVisible(false)}
+      >
+        <TouchableOpacity style={styles.moreOverlay} activeOpacity={1} onPress={() => setMoreMenuVisible(false)}>
+          <View style={styles.moreSheet}>
+            <View style={styles.moreHandle} />
+            <TouchableOpacity
+              style={styles.moreItem}
+              activeOpacity={0.75}
+              onPress={() => {
+                setMoreMenuVisible(false);
+                handleDeleteAccount();
+              }}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              <Text style={styles.moreItemTextDanger}>Delete Account</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.moreCancelBtn} activeOpacity={0.75} onPress={() => setMoreMenuVisible(false)}>
+              <Text style={styles.moreCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <MembershipModal
         visible={membershipModalVisible}
@@ -568,5 +637,30 @@ function createStyles(c: ThemeColors) {
     factionDot: { width: 8, height: 8, borderRadius: 4 },
     factionOptionText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold, color: c.text },
     saveBtn: { marginTop: Spacing.sm },
+    headerBtns: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.xs },
+    moreBtn: {
+      backgroundColor: c.surface, borderRadius: BorderRadius.full,
+      borderWidth: 1, borderColor: c.surfaceBorder,
+      paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    moreOverlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
+    moreSheet: {
+      backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+      paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.sm, gap: Spacing.sm,
+    },
+    moreHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: c.surfaceBorder, alignSelf: 'center', marginBottom: Spacing.md },
+    moreItem: {
+      flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+      paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
+      backgroundColor: c.danger + '12', borderRadius: BorderRadius.md,
+      borderWidth: 1, borderColor: c.danger + '33',
+    },
+    moreItemTextDanger: { fontSize: Typography.sizes.md, color: c.danger, fontWeight: Typography.weights.semibold },
+    moreCancelBtn: {
+      alignItems: 'center', paddingVertical: Spacing.md,
+      backgroundColor: c.surfaceElevated, borderRadius: BorderRadius.md,
+    },
+    moreCancelText: { fontSize: Typography.sizes.md, color: c.textSecondary, fontWeight: Typography.weights.medium },
   });
 }
