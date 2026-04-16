@@ -7,8 +7,6 @@ import { Trade, TradeRating } from '@/types';
 function mapConfirmError(message: string): string {
   if (message.includes('insufficient_messages'))
     return 'Both players need to send at least one message before a trade can be confirmed.';
-  if (message.includes('pair_cooldown'))
-    return 'You can only complete one rated trade with the same player per 8 hours.';
   if (message.includes('not_a_participant') || message.includes('not_a_party'))
     return 'You are not a participant in this trade.';
   if (message.includes('conversation_not_found'))
@@ -30,7 +28,6 @@ export const tradesService = {
   // Called when a user taps "Mark Trade Complete".
   // Delegates entirely to the confirm_trade RPC which enforces all anti-abuse rules:
   //   - Both parties must have sent ≥1 message
-  //   - 7-day cooldown per pair (prevents farming)
   //   - Only sets the caller's confirmation flag (can't flip partner's)
   //   - Sets completed_at server-side (client can't forge it)
   async markComplete(
@@ -70,6 +67,30 @@ export const tradesService = {
     ratedId: string,
     isPositive: boolean | null,
   ): Promise<{ data: TradeRating | null; error: Error | null }> {
+    // Positive/negative ratings are limited to one per pair per 8 hours.
+    // Neutral ratings (null) are exempt — they carry no reputation impact.
+    if (isPositive !== null) {
+      const cooldownCutoff = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString();
+      const { data: recentRating } = await supabase
+        .from('trade_ratings')
+        .select('id')
+        .eq('rater_id', raterId)
+        .eq('rated_id', ratedId)
+        .not('is_positive', 'is', null)
+        .gte('created_at', cooldownCutoff)
+        .maybeSingle();
+
+      if (recentRating) {
+        return {
+          data: null,
+          error: new Error(
+            "You've already rated this player in the last 8 hours. " +
+            'You can still complete more trades with them — ratings are limited to one per 8-hour window.',
+          ),
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from('trade_ratings')
       .insert({ trade_id: tradeId, rater_id: raterId, rated_id: ratedId, is_positive: isPositive })
