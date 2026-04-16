@@ -81,9 +81,11 @@ Tokens live in `constants/theme.ts` · consumed via `context/ThemeContext.tsx`
 
 **Factions:** LRI · MSS · CSI — used for trading zones and display
 
-**LFG post duration by membership tier:**
-- Free → 12 hours · Member → 24 hours · Lifetime → 48 hours
-- One active post per player — creating a new post auto-deactivates the previous one
+**LFG post duration:** Flat 24h for all tiers (changed in v1.2.0)
+
+**LFG active post limits by tier:** non-member=2 · member=5 · lifetime=10
+
+**LFG post creation:** Blocked (not auto-deactivated) when at the tier limit. Each card shows a live countdown timer and the post button shows `used/limit` count.
 
 **Trade system:** One trade per conversation · both parties confirm → `completed_at` set → ratings unlock · `UNIQUE(trade_id, rater_id)` prevents double-rating
 
@@ -106,6 +108,30 @@ All tables have RLS. Run SQL files in Supabase SQL Editor in schema order when s
 - Remote: `https://github.com/CHANDLERNC/GW-Trade` · branch: `master`
 - `master` is the single source of truth
 - Tagged: `v1.0.0-beta`
+
+---
+
+## Current Version
+
+`v1.2.0` — 2026-04-14
+
+### Recent Changes
+| Version | Change |
+|---------|--------|
+| 1.2.0 | LFG: flat 24h duration, per-tier active limits (2/5/10), countdown timer, slot counter, reject-at-limit |
+| 1.1.0 | Completed trades feed on Home, price history screens, listing confirmation dialog, "want in return" required |
+| 1.0.0-beta | Core app: listings, browse, inbox, saved, LFG, profile, admin, push notifications |
+
+### Active Services
+`auth` · `listings` · `lfg` · `trades` · `messages` · `conversations` · `notifications` · `priceHistory` · `profile` · `membership` · `safety` · `saved` · `support` · `comments`
+
+---
+
+## Session Notes
+
+> **End of session:** Tell Claude "save anything worth keeping" — it will update memory with discoveries, decisions, and constraints found during the session.
+>
+> **Sensitive data:** Wrap in `<private>...</private>` — Claude will use it for the task but never save it to memory.
 
 ---
 
