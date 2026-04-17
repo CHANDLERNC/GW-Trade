@@ -53,6 +53,16 @@ function RootLayoutInner() {
           }}
         />
         <Stack.Screen
+          name="user/[id]"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: '',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
           name="price-history/[item]"
           options={{ headerShown: false }}
         />

@@ -49,7 +49,9 @@ export function ConversationRow({ conversation, currentUserId }: ConversationRow
         )}
 
         <Text style={[styles.preview, hasUnread && styles.previewUnread]} numberOfLines={1}>
-          {conversation.last_message_preview ?? 'No messages yet'}
+          {conversation.last_message_preview
+            ? `${conversation.last_message_sender_id === currentUserId ? 'You: ' : ''}${conversation.last_message_preview}`
+            : 'No messages yet'}
         </Text>
       </View>
     </TouchableOpacity>

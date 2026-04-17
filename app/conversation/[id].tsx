@@ -53,7 +53,7 @@ export default function ConversationScreen() {
   const headerHeight = useHeaderHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation();
-  const { messages, loading } = useMessages(id);
+  const { messages, loading, addOptimistic, refetch } = useMessages(id);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -143,7 +143,23 @@ export default function ConversationScreen() {
     if (!content || !user || !id) return;
     setText('');
     setSending(true);
-    if (partnerId) await messagesService.sendMessage(id, user.id, content, partnerId);
+
+    // Optimistic: show the message immediately
+    const optimistic: Message = {
+      id: `temp-${Date.now()}`,
+      conversation_id: id,
+      sender_id: user.id,
+      content,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+    addOptimistic((prev) => [...prev, optimistic]);
+
+    if (partnerId) {
+      await messagesService.sendMessage(id, user.id, content, partnerId);
+      // Refetch to replace optimistic with real data
+      await refetch();
+    }
     setSending(false);
   };
 

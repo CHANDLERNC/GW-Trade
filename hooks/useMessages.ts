@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { messagesService } from '@/services/messages.service';
 import { Conversation, Message } from '@/types';
 import { useQuery } from '@/hooks/useQuery';
@@ -18,6 +18,12 @@ export function useMessages(conversationId: string | undefined) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const refetch = useCallback(async () => {
+    if (!conversationId) return;
+    const { data } = await messagesService.getMessages(conversationId);
+    if (data) setMessages(data as Message[]);
+  }, [conversationId]);
+
   useEffect(() => {
     if (!conversationId) {
       setLoading(false);
@@ -30,7 +36,7 @@ export function useMessages(conversationId: string | undefined) {
       setLoading(false);
     });
 
-    // Realtime subscription — fetch the full row (with profiles join) on new message
+    // Realtime subscription — re-fetch full list on any new message
     const channel = messagesService.subscribeToMessages(conversationId, () => {
       messagesService.getMessages(conversationId).then(({ data }) => {
         if (data) setMessages(data as Message[]);
@@ -42,5 +48,5 @@ export function useMessages(conversationId: string | undefined) {
     };
   }, [conversationId]);
 
-  return { messages, loading };
+  return { messages, loading, addOptimistic: setMessages, refetch };
 }

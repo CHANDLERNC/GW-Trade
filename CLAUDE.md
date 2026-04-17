@@ -113,11 +113,13 @@ All tables have RLS. Run SQL files in Supabase SQL Editor in schema order when s
 
 ## Current Version
 
-`v1.2.0` — 2026-04-14
+`v1.3.2` — 2026-04-16
 
 ### Recent Changes
 | Version | Change |
 |---------|--------|
+| 1.3.2 | Hotfix: back button on player profile, optimistic message send, duplicate conversation fix, "You:" inbox preview prefix |
+| 1.3.1 | App Store global launch |
 | 1.2.0 | LFG: flat 24h duration, per-tier active limits (2/5/10), countdown timer, slot counter, reject-at-limit |
 | 1.1.0 | Completed trades feed on Home, price history screens, listing confirmation dialog, "want in return" required |
 | 1.0.0-beta | Core app: listings, browse, inbox, saved, LFG, profile, admin, push notifications |

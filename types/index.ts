@@ -118,6 +118,7 @@ export interface Conversation {
   participant_two: string;
   last_message_at: string | null;
   last_message_preview: string | null;
+  last_message_sender_id: string | null;
   created_at: string;
   unread_count?: number;
   profiles_one?: ConversationProfile;

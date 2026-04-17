@@ -52,15 +52,19 @@ export const messagesService = {
     listingId?: string
   ) {
     // Look for existing conversation between these two users on this listing
-    const filter = listingId
-      ? `and(participant_one.eq.${userId},participant_two.eq.${otherUserId},listing_id.eq.${listingId}),and(participant_one.eq.${otherUserId},participant_two.eq.${userId},listing_id.eq.${listingId})`
-      : `and(participant_one.eq.${userId},participant_two.eq.${otherUserId}),and(participant_one.eq.${otherUserId},participant_two.eq.${userId})`;
-
-    const { data: existing } = await supabase
+    // When listing_id is null, use .is('listing_id', null) because NULL ≠ NULL in SQL
+    let query = supabase
       .from('conversations')
       .select('id')
-      .or(filter)
-      .maybeSingle();
+      .or(`and(participant_one.eq.${userId},participant_two.eq.${otherUserId}),and(participant_one.eq.${otherUserId},participant_two.eq.${userId})`);
+
+    if (listingId) {
+      query = query.eq('listing_id', listingId);
+    } else {
+      query = query.is('listing_id', null);
+    }
+
+    const { data: existing } = await query.limit(1).maybeSingle();
 
     if (existing) return { data: existing, error: null };
 
@@ -102,7 +106,11 @@ export const messagesService = {
       await Promise.all([
         supabase
           .from('conversations')
-          .update({ last_message_at: new Date().toISOString(), last_message_preview: preview })
+          .update({
+            last_message_at: new Date().toISOString(),
+            last_message_preview: preview,
+            last_message_sender_id: senderId,
+          })
           .eq('id', conversationId),
         sendNotificationToRecipient(senderId, recipientId, content),
       ]);
