@@ -70,9 +70,10 @@
 
 | File | Table(s) | Status |
 |------|----------|--------|
-| `supabase/agreements.sql` | `user_agreements` | 🗄️ Run now |
-| `supabase/reports.sql` | `reports` | 🗄️ Run now |
-| `supabase/deletion.sql` | `profiles.deletion_requested_at` column | 🗄️ Run now |
+| `supabase/fix_profiles_rls.sql` | `is_admin()` function + policies | ✅ Run 2026-04-18 |
+| `supabase/agreements.sql` | `user_agreements` | ✅ Run 2026-04-18 |
+| `supabase/reports.sql` | `reports` | ✅ Run 2026-04-18 |
+| `supabase/deletion.sql` | `profiles.deletion_requested_at` column | ✅ Run 2026-04-18 |
 | Tier 2 — strikes | `user_strikes` | ⬜ Pending implementation |
 | Tier 2 — disputes | `trade_disputes` | ⬜ Pending implementation |
 | Tier 2 — login events | `login_events` | ⬜ Pending implementation |
