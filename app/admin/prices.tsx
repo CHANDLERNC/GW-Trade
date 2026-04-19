@@ -205,7 +205,7 @@ export default function AdminPricesScreen() {
                       style={styles.editInput}
                       value={editValue}
                       onChangeText={setEditValue}
-                      placeholder="e.g. 50,000 Rubles"
+                      placeholder="e.g. 50,000 USD"
                       placeholderTextColor={colors.textMuted}
                       autoFocus
                       returnKeyType="done"

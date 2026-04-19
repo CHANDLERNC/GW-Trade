@@ -476,7 +476,7 @@ export default function ListingDetailScreen() {
                   style={styles.soldPriceInput}
                   value={soldPrice}
                   onChangeText={setSoldPrice}
-                  placeholder="e.g. 50,000 Rubles"
+                  placeholder="e.g. 50,000 USD"
                   placeholderTextColor={colors.textMuted}
                   autoFocus
                   returnKeyType="done"

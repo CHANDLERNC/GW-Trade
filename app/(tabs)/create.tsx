@@ -261,8 +261,8 @@ export default function CreateScreen() {
                 label="Want in Return *"
                 value={wantInReturn}
                 onChangeText={setWantInReturn}
-                placeholder="e.g. Rubles, Level 4 armor, or offers"
-                hint="Required — Rubles is GZW's in-game currency, or describe gear you want"
+                placeholder="e.g. In-game USD, Level 4 armor, or offers"
+                hint="Required — In-game USD is GZW's currency, or describe gear you want"
                 error={errors.wantInReturn}
                 maxLength={200}
               />
