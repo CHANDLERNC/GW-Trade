@@ -84,18 +84,22 @@ export default function CreateScreen() {
     const listingTitle = isKeyCategory ? selectedKey!.name : title.trim();
     const keyName = isKeyCategory ? selectedKey!.name : null;
 
-    const { error } = await listingsService.createListing({
-      user_id: user.id,
-      title: listingTitle,
-      key_name: keyName,
-      description: description.trim() || null,
-      want_in_return: wantInReturn.trim(),
-      quantity: parseInt(quantity, 10),
-      category: category!,
-      faction: faction!,
-      is_active: true,
-    });
-    setLoading(false);
+    let error: any;
+    try {
+      ({ error } = await listingsService.createListing({
+        user_id: user.id,
+        title: listingTitle,
+        key_name: keyName,
+        description: description.trim() || null,
+        want_in_return: wantInReturn.trim(),
+        quantity: parseInt(quantity, 10),
+        category: category!,
+        faction: faction!,
+        is_active: true,
+      }));
+    } finally {
+      setLoading(false);
+    }
 
     if (error) {
       if (error.message.startsWith('LIMIT_REACHED')) {

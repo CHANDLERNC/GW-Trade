@@ -25,24 +25,31 @@ import { TradeRatingModal } from '@/components/ui/TradeRatingModal';
 import { Message, Trade } from '@/types';
 import { supabase } from '@/lib/supabase';
 
-function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
+function MessageBubble({ message, isOwn, onLongPress }: { message: Message; isOwn: boolean; onLongPress?: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createBubbleStyles(colors), [colors]);
 
   return (
-    <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
-      <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
-        <Text style={[styles.bubbleText, isOwn && styles.bubbleTextOwn]}>
-          {message.content}
-        </Text>
-        <Text style={[styles.bubbleTime, isOwn && styles.bubbleTimeOwn]}>
-          {new Date(message.created_at).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
+    <TouchableOpacity
+      onLongPress={onLongPress}
+      delayLongPress={400}
+      activeOpacity={onLongPress ? 0.7 : 1}
+      disabled={!onLongPress}
+    >
+      <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
+        <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
+          <Text style={[styles.bubbleText, isOwn && styles.bubbleTextOwn]}>
+            {message.content}
+          </Text>
+          <Text style={[styles.bubbleTime, isOwn && styles.bubbleTimeOwn]}>
+            {new Date(message.created_at).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -138,6 +145,20 @@ export default function ConversationScreen() {
     }
   }, [messages.length]);
 
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    Alert.alert('Delete Message', 'Remove this message for you?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          addOptimistic((prev) => prev.filter((m) => m.id !== messageId));
+          await messagesService.deleteMessage(messageId, user!.id);
+        },
+      },
+    ]);
+  }, [user, addOptimistic]);
+
   const handleSend = async () => {
     const content = text.trim();
     if (!content || !user || !id) return;
@@ -155,12 +176,14 @@ export default function ConversationScreen() {
     };
     addOptimistic((prev) => [...prev, optimistic]);
 
-    if (partnerId) {
-      await messagesService.sendMessage(id, user.id, content, partnerId);
-      // Refetch to replace optimistic with real data
-      await refetch();
+    try {
+      if (partnerId) {
+        await messagesService.sendMessage(id, user.id, content, partnerId);
+        await refetch();
+      }
+    } finally {
+      setSending(false);
     }
-    setSending(false);
   };
 
   const handleMarkComplete = async () => {
@@ -182,8 +205,12 @@ export default function ConversationScreen() {
           text: 'Confirm',
           onPress: async () => {
             setTradeLoading(true);
-            const { data, error } = await tradesService.markComplete(id, user.id);
-            setTradeLoading(false);
+            let data: any, error: any;
+            try {
+              ({ data, error } = await tradesService.markComplete(id, user.id));
+            } finally {
+              setTradeLoading(false);
+            }
             if (error) {
               Alert.alert('Cannot Confirm Trade', error.message);
             } else {
@@ -242,7 +269,11 @@ export default function ConversationScreen() {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <MessageBubble message={item} isOwn={item.sender_id === user?.id} />
+            <MessageBubble
+              message={item}
+              isOwn={item.sender_id === user?.id}
+              onLongPress={item.sender_id === user?.id ? () => handleDeleteMessage(item.id) : undefined}
+            />
           )}
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}

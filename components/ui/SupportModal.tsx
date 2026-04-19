@@ -51,8 +51,12 @@ export function SupportModal({ visible, onClose }: SupportModalProps) {
   const handleSubmit = async () => {
     if (!canSubmit || !user) return;
     setSubmitting(true);
-    const { error } = await supportService.submitTicket(user.id, category!, message);
-    setSubmitting(false);
+    let error: any;
+    try {
+      ({ error } = await supportService.submitTicket(user.id, category!, message));
+    } finally {
+      setSubmitting(false);
+    }
     if (error) {
       Alert.alert('Error', 'Could not send your report. Please try again.');
     } else {

@@ -52,7 +52,8 @@ export const lfgService = {
     }
   ): Promise<{ data: LFGPost | null; error: any; limitReached?: boolean }> {
     const limit = lfgPostLimit(post.isLifetimeMember, post.isMember);
-    const expiresAt = new Date(Date.now() + LFG_POST_DURATION_HOURS * 60 * 60 * 1000).toISOString();
+    const durationHours = lfgPostDurationHours(post.isLifetimeMember, post.isMember);
+    const expiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000).toISOString();
 
     // Check how many active posts the user currently has
     const { count } = await supabase

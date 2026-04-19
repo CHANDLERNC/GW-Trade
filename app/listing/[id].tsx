@@ -115,9 +115,12 @@ export default function ListingDetailScreen() {
         onPress: async () => {
           if (!listing) return;
           setDeleting(true);
-          await listingsService.deleteListing(listing.id);
-          setDeleting(false);
-          router.replace('/(tabs)/profile');
+          try {
+            await listingsService.deleteListing(listing.id);
+            router.replace('/(tabs)/profile');
+          } finally {
+            setDeleting(false);
+          }
         },
       },
     ]);
@@ -126,18 +129,25 @@ export default function ListingDetailScreen() {
   const handleToggleActive = async () => {
     if (!listing) return;
     setToggling(true);
-    await listingsService.toggleActive(listing.id, !listing.is_active);
-    router.replace(`/listing/${listing.id}`);
-    setToggling(false);
+    try {
+      await listingsService.toggleActive(listing.id, !listing.is_active);
+      router.replace(`/listing/${listing.id}`);
+    } finally {
+      setToggling(false);
+    }
   };
 
   const handleMarkSoldConfirm = async () => {
     if (!listing) return;
     setMarkingSold(true);
     setSoldModalVisible(false);
-    const { error } = await listingsService.markListingSold(listing.id, soldPrice);
-    setMarkingSold(false);
-    setSoldPrice('');
+    let error: any;
+    try {
+      ({ error } = await listingsService.markListingSold(listing.id, soldPrice));
+    } finally {
+      setMarkingSold(false);
+      setSoldPrice('');
+    }
     if (error) {
       Alert.alert('Error', (error as any)?.message ?? 'Could not mark as sold.');
     } else {

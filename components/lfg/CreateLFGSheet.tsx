@@ -67,14 +67,16 @@ export function CreateLFGSheet({ visible, onClose, onSubmit, initialFaction, pos
 
   async function handleSubmit() {
     setSubmitting(true);
-    await onSubmit({ faction, zone, region, slots_total: slots, description, mic_required: micRequired });
-    setSubmitting(false);
-    // Reset form
-    setZone('any');
-    setRegion('NA East');
-    setSlots(4);
-    setDescription('');
-    setMicRequired(false);
+    try {
+      await onSubmit({ faction, zone, region, slots_total: slots, description, mic_required: micRequired });
+      setZone('any');
+      setRegion('NA East');
+      setSlots(4);
+      setDescription('');
+      setMicRequired(false);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const selectedFaction = FACTIONS[faction];

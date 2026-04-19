@@ -35,9 +35,12 @@ export function TradeRatingModal({
     if (selected === null) return;
     const isPositive = selected === 'positive' ? true : selected === 'negative' ? false : null;
     setSubmitting(true);
-    await onSubmit(isPositive);
-    setSubmitting(false);
-    setSelected(null);
+    try {
+      await onSubmit(isPositive);
+      setSelected(null);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

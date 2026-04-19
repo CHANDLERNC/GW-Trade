@@ -137,6 +137,14 @@ export const messagesService = {
     return count ?? 0;
   },
 
+  async deleteMessage(messageId: string, userId: string) {
+    return supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', userId);
+  },
+
   async markAsRead(conversationId: string, userId: string) {
     return supabase
       .from('messages')

@@ -83,6 +83,7 @@ export default function EditListingScreen() {
     } else {
       if (!title.trim()) e.title = 'Title is required.';
     }
+    if (!wantInReturn.trim()) e.wantInReturn = 'Required — describe what you want in return.';
     const qty = parseInt(quantity, 10);
     if (isNaN(qty) || qty < 1) e.quantity = 'Enter a valid quantity.';
     setErrors(e);
@@ -96,17 +97,20 @@ export default function EditListingScreen() {
     const listingTitle = isKeyCategory ? selectedKey!.name : title.trim();
     const keyName = isKeyCategory ? selectedKey!.name : null;
 
-    const { error } = await listingsService.updateListing(id, {
-      title: listingTitle,
-      key_name: keyName,
-      description: description.trim() || null,
-      want_in_return: wantInReturn.trim() || null,
-      quantity: parseInt(quantity, 10),
-      category: category!,
-      faction: faction!,
-    });
-
-    setLoading(false);
+    let error: any;
+    try {
+      ({ error } = await listingsService.updateListing(id, {
+        title: listingTitle,
+        key_name: keyName,
+        description: description.trim() || null,
+        want_in_return: wantInReturn.trim() || null,
+        quantity: parseInt(quantity, 10),
+        category: category!,
+        faction: faction!,
+      }));
+    } finally {
+      setLoading(false);
+    }
     if (error) {
       Alert.alert('Error', error.message);
     } else {

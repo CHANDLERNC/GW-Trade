@@ -113,11 +113,12 @@ All tables have RLS. Run SQL files in Supabase SQL Editor in schema order when s
 
 ## Current Version
 
-`v1.4.0` — 2026-04-18
+`v1.4.1` — 2026-04-19
 
 ### Recent Changes
 | Version | Change |
 |---------|--------|
+| 1.4.1 | Emergency patch: LFG posts broken (undefined constant crash), 8 stuck spinner fixes, edit listing wantInReturn validation, user message delete (long press), in-game USD currency text |
 | 1.4.0 | Trust & Transparency: Supporter rebrand, first-login disclosure modal, ToS/Privacy/Community Rules, report system, data deletion, public roadmap/changelog/costs, admin screens, LimitReachedModal, age gate + verified-trader clause at signup, tier limit overhaul |
 | 1.3.2 | Hotfix: back button on player profile, optimistic message send, duplicate conversation fix, "You:" inbox preview prefix |
 | 1.3.1 | App Store global launch |
