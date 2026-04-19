@@ -39,7 +39,7 @@ export function getListingLimit(level: AccessLevel): number {
 
 export function getPostDurationMs(level: AccessLevel): number {
   switch (level) {
-    case 'lifetime':     return MEMBERSHIP.LIFETIME_POST_DAYS * 86_400_000;
+    case 'lifetime':     return MEMBERSHIP.LIFETIME_POST_HOURS * 3_600_000;
     case 'premium':
     case 'temp_premium': return MEMBERSHIP.PREMIUM_POST_HOURS * 3_600_000;
     default:             return MEMBERSHIP.FREE_POST_HOURS * 3_600_000;

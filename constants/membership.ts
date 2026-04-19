@@ -3,16 +3,21 @@ export const MONETIZATION_ENABLED = false;
 
 // ── Listing limits per access level ──────────────────────────────────────────
 export const MEMBERSHIP = {
-  FREE_LIMIT: 5,
-  PREMIUM_LIMIT: 35,
-  LIFETIME_LIMIT: 99,
+  FREE_LIMIT: 10,
+  PREMIUM_LIMIT: 30,
+  LIFETIME_LIMIT: 90,
 
-  FREE_POST_HOURS: 24,
-  PREMIUM_POST_HOURS: 72,
-  LIFETIME_POST_DAYS: 14,
+  FREE_POST_HOURS: 12,
+  PREMIUM_POST_HOURS: 24,
+  LIFETIME_POST_HOURS: 48,
 
-  FREE_MESSAGES_PER_DAY: 5,    // enforced client-side until backend rate limiting lands
-  PREMIUM_MESSAGES_PER_DAY: 0, // 0 = unlimited
+  FREE_MESSAGES_PER_DAY: 50,
+  PREMIUM_MESSAGES_PER_DAY: 200,
+  LIFETIME_MESSAGES_PER_DAY: 0, // 0 = unlimited
+
+  FREE_LFG_LIMIT: 4,
+  PREMIUM_LFG_LIMIT: 15,
+  LIFETIME_LFG_LIMIT: 45,
 
   // First N users qualify for discounted lifetime price
   LAUNCH_DISCOUNT_THRESHOLD: 200,
@@ -42,29 +47,27 @@ export const PLANS: Record<PlanId, {
 }> = {
   monthly: {
     id: 'monthly',
-    label: 'Premium Monthly',
+    label: 'Supporter — Monthly',
     price: '$1.99',
     note: 'per month · cancel anytime',
     earlyAdopterDiscount: '15% off your first month',
   },
   yearly: {
     id: 'yearly',
-    label: 'Premium Yearly',
+    label: 'Supporter — Yearly',
     price: '$14.99',
     note: 'per year · save 37%',
-    badge: 'BEST VALUE',
     earlyAdopterDiscount: '15% off your first year',
   },
   lifetime: {
     id: 'lifetime',
-    label: 'Lifetime Access',
+    label: 'Supporter — Lifetime',
     price: '$34.99',
-    note: 'unlimited · pay once · never again',
-    badge: 'POPULAR',
+    note: 'one-time contribution · supports the project long-term',
   },
   lifetime_discounted: {
     id: 'lifetime_discounted',
-    label: 'Lifetime Access',
+    label: 'Supporter — Lifetime',
     price: '$29.99',
     note: 'launch price · first 200 users only',
     badge: 'LAUNCH PRICE',

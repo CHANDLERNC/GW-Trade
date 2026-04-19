@@ -10,6 +10,7 @@ import {
   StatusBar,
   RefreshControl,
   Switch,
+  Animated,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ import { CATEGORY_LIST, CATEGORY_META, TACTICAL_STATUS } from '@/constants/categ
 import { resolveNameColor } from '@/constants/nameColors';
 import { listingsService } from '@/services/listings.service';
 import { priceHistoryService } from '@/services/priceHistory.service';
+import { supabase } from '@/lib/supabase';
 import { timeAgo } from '@/utils/dateFormat';
 import { Category, FactionSlug, Listing, PriceHistoryEntry } from '@/types';
 
@@ -47,10 +49,12 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [recentListings, setRecentListings] = useState<Listing[]>([]);
   const [completedTrades, setCompletedTrades] = useState<PriceHistoryEntry[]>([]);
+  const [supporterCount, setSupporterCount] = useState<number>(0);
   const [statusLine, setStatusLine] = useState(getRandomStatus);
   const [now, setNow] = useState(new Date());
   const [use24hr, setUse24hr] = useState(true);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const trustPulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     AsyncStorage.getItem('@gzw_clock_format').then((val) => {
@@ -59,6 +63,15 @@ export default function HomeScreen() {
     clockRef.current = setInterval(() => setNow(new Date()), 1000);
     return () => { if (clockRef.current) clearInterval(clockRef.current); };
   }, []);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(trustPulse, { toValue: 1, duration: 1800, useNativeDriver: false }),
+        Animated.timing(trustPulse, { toValue: 0, duration: 1800, useNativeDriver: false }),
+      ])
+    ).start();
+  }, [trustPulse]);
 
   const toggleClockFormat = useCallback(() => {
     setUse24hr((prev) => {
@@ -73,12 +86,17 @@ export default function HomeScreen() {
   const totalListings = counts.keys + counts.gear + counts.items;
 
   const fetchRecent = useCallback(async () => {
-    const [listingsResult, trades] = await Promise.all([
+    const [listingsResult, trades, supportersResult] = await Promise.all([
       listingsService.getListings({ activeOnly: true }),
       priceHistoryService.getRecentCompletedTrades(20),
+      supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .or('is_member.eq.true,is_lifetime_member.eq.true'),
     ]);
     setRecentListings(((listingsResult.data as Listing[]) ?? []).slice(0, 8));
     setCompletedTrades(trades);
+    setSupporterCount(supportersResult.count ?? 0);
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -180,6 +198,23 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
+        {/* Trust strip */}
+        <TouchableOpacity
+          style={styles.trustStrip}
+          onPress={() => router.push('/legal/terms' as any)}
+          activeOpacity={0.75}
+        >
+          <Animated.Text style={[styles.trustStripText, {
+            color: trustPulse.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['#7A2020', '#E53E3E'],
+            }),
+          }]}>
+            No RMT  ·  No Data Selling  ·  No Pay-to-Win Reputation
+          </Animated.Text>
+          <Text style={styles.trustStripLink}>Our commitments →</Text>
+        </TouchableOpacity>
 
         {/* Quick actions */}
         <View style={styles.quickSection}>
@@ -368,6 +403,7 @@ export default function HomeScreen() {
         {/* Faction markets */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>FACTION MARKETS</Text>
+
           <View style={styles.factionList}>
             {FACTION_LIST.map((faction) => (
               <TouchableOpacity
@@ -390,6 +426,38 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+        {/* Supporter goal banner */}
+        <TouchableOpacity
+          style={styles.supporterBanner}
+          onPress={() => router.push('/transparency/costs')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.supporterBannerTop}>
+            <Text style={styles.supporterBannerTitle}>Monthly Support Goal</Text>
+            <Text style={styles.supporterBannerAmount}>
+              ${Math.min(supporterCount * 5, 250).toFixed(0)} <Text style={styles.supporterBannerGoal}>/ $250</Text>
+            </Text>
+          </View>
+          <View style={styles.supporterProgressTrack}>
+            <View style={[styles.supporterProgressFill, { width: `${Math.min((supporterCount * 5 / 250) * 100, 100)}%` as any }]} />
+          </View>
+          <View style={styles.supporterBannerBottom}>
+            <Text style={styles.supporterBannerCount}>
+              {supporterCount} {supporterCount === 1 ? 'supporter' : 'supporters'} this month
+            </Text>
+            <Text style={styles.supporterBannerNote}>Any surplus → new features & dev</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Non-affiliation footer */}
+        <View style={styles.disclaimerFooter}>
+          <Text style={styles.disclaimerText}>
+            GZW Market is an unofficial fan-made tool. Not affiliated with or endorsed by Mad Finger Games. Gray Zone Warfare is a trademark of Mad Finger Games.
+          </Text>
+          <TouchableOpacity onPress={() => router.push('/about')} activeOpacity={0.7} style={styles.aboutLink}>
+            <Text style={styles.aboutLinkText}>About · Legal · Transparency · Keep The Lights On</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -682,5 +750,105 @@ function createStyles(c: ThemeColors) {
     factionInfo: { gap: 2 },
     factionShort: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
     factionName: { fontSize: Typography.sizes.md, color: c.textSecondary },
+    trustStrip: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: Spacing.sm,
+    },
+    trustStripText: {
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.semibold,
+      letterSpacing: 0.3,
+      flex: 1,
+    },
+    trustStripLink: {
+      fontSize: Typography.sizes.xs,
+      color: c.accent,
+      fontWeight: Typography.weights.semibold,
+      flexShrink: 0,
+    },
+    disclaimerFooter: {
+      marginHorizontal: Spacing.lg,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.lg,
+      paddingTop: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: c.surfaceBorder,
+    },
+    disclaimerText: {
+      fontSize: Typography.sizes.xs,
+      color: c.textMuted,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    aboutLink: { marginTop: Spacing.sm, alignItems: 'center' },
+    aboutLinkText: {
+      fontSize: Typography.sizes.xs,
+      color: c.accent,
+      textAlign: 'center',
+    },
+    supporterBanner: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.lg,
+      borderWidth: 1,
+      borderColor: c.accent + '44',
+      padding: Spacing.md,
+      gap: Spacing.sm,
+    },
+    supporterBannerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    supporterBannerTitle: {
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.semibold,
+      color: c.text,
+    },
+    supporterBannerAmount: {
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.bold,
+      color: c.accent,
+    },
+    supporterBannerGoal: {
+      fontSize: Typography.sizes.xs,
+      color: c.textMuted,
+      fontWeight: Typography.weights.regular,
+    },
+    supporterProgressTrack: {
+      height: 4,
+      backgroundColor: c.surfaceElevated,
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    supporterProgressFill: {
+      height: 4,
+      backgroundColor: c.accent,
+      borderRadius: 2,
+      minWidth: 4,
+    },
+    supporterBannerBottom: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    supporterBannerCount: {
+      fontSize: Typography.sizes.xs,
+      color: c.textSecondary,
+    },
+    supporterBannerNote: {
+      fontSize: Typography.sizes.xs,
+      color: c.textMuted,
+    },
   });
 }

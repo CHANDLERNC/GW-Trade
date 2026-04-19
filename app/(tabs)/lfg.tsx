@@ -21,6 +21,8 @@ import { CreateLFGSheet } from '@/components/lfg/CreateLFGSheet';
 import { lfgService, lfgPostDurationHours, lfgPostLimit } from '@/services/lfg.service';
 import { FACTION_LIST } from '@/constants/factions';
 import { FactionSlug, LFGFilters, LFGZone, LFGRegion, LFGPost } from '@/types';
+import { LimitReachedModal } from '@/components/ui/LimitReachedModal';
+import { MembershipModal } from '@/components/ui/MembershipModal';
 
 type FactionFilter = FactionSlug | 'all';
 type ZoneFilter = LFGZone | 'all';
@@ -49,6 +51,8 @@ export default function LFGScreen() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
+  const [membershipModalVisible, setMembershipModalVisible] = useState(false);
   const [factionFilter, setFactionFilter] = useState<FactionFilter>('all');
   const [zoneFilter, setZoneFilter] = useState<ZoneFilter>('all');
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,7 +135,7 @@ export default function LFGScreen() {
             myPosts.length > 0 && styles.postBtnActive,
             atLimit && styles.postBtnLimit,
           ]}
-          onPress={() => !atLimit && setShowCreate(true)}
+          onPress={() => atLimit ? setLimitModalVisible(true) : setShowCreate(true)}
           activeOpacity={0.8}
         >
           <Ionicons
@@ -269,6 +273,22 @@ export default function LFGScreen() {
         postDurationHours={postDurationHours}
         activePostCount={myPosts.length}
         postLimit={postLimit}
+      />
+
+      <LimitReachedModal
+        visible={limitModalVisible}
+        limitType="lfg"
+        onClose={() => setLimitModalVisible(false)}
+        onViewPlans={() => { setLimitModalVisible(false); setMembershipModalVisible(true); }}
+      />
+      <MembershipModal
+        visible={membershipModalVisible}
+        onClose={() => setMembershipModalVisible(false)}
+        currentCount={myPosts.length}
+        isMember={profile?.is_member ?? false}
+        isEarlyAdopter={profile?.is_early_adopter ?? false}
+        earlyAccessClaimed={profile?.early_access_claimed ?? false}
+        onClaimed={() => {}}
       />
     </SafeAreaView>
   );

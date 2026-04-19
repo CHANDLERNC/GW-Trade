@@ -70,6 +70,126 @@ function RootLayoutInner() {
           name="price-history/category/[cat]"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="legal/terms"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Terms of Service',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="legal/privacy"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Privacy Policy',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="legal/community-rules"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Community Rules',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="transparency/costs"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Keep The Lights On',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="transparency/roadmap"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Roadmap',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="transparency/changelog"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Changelog',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="about/index"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'About',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="about/team"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'The Team',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="settings/delete-data"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Delete My Data',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="settings/account-standing"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Account Standing',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="about/faq"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'FAQ',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="about/moderators"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.text,
+            headerTitle: 'Moderation Team',
+            headerBackTitle: 'Back',
+          }}
+        />
       </Stack>
     </AuthProvider>
   );

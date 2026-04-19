@@ -35,27 +35,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let initialHandled = false;
+
+    // Hard timeout — if onAuthStateChange never fires (extreme edge case), unblock after 10s.
+    const timeout = setTimeout(() => {
+      if (!initialHandled) {
+        initialHandled = true;
+        setLoading(false);
+      }
+    }, 10_000);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
-        loadProfile(session.user.id).finally(() => setLoading(false));
+        // Fire-and-forget so a slow profile fetch never blocks the spinner.
+        loadProfile(session.user.id);
       } else {
+        setProfile(null);
+      }
+      // Unblock the loading screen on the very first auth event (INITIAL_SESSION).
+      if (!initialHandled) {
+        initialHandled = true;
+        clearTimeout(timeout);
         setLoading(false);
       }
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        await loadProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const refreshProfile = async () => {

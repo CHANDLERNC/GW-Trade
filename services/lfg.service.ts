@@ -1,19 +1,18 @@
 import { supabase } from '@/lib/supabase';
 import { LFGPost, LFGFilters } from '@/types';
 import { LFG_PROFILE_FIELDS } from '@/constants/queries';
+import { MEMBERSHIP } from '@/constants/membership';
 
-// All tiers now use 24h duration; tier determines how many active posts are allowed
-export const LFG_POST_DURATION_HOURS = 24;
-
-export function lfgPostDurationHours(_isLifetimeMember: boolean, _isMember: boolean): number {
-  return LFG_POST_DURATION_HOURS;
+export function lfgPostDurationHours(isLifetimeMember: boolean, isMember: boolean): number {
+  if (isLifetimeMember) return MEMBERSHIP.LIFETIME_POST_HOURS;
+  if (isMember) return MEMBERSHIP.PREMIUM_POST_HOURS;
+  return MEMBERSHIP.FREE_POST_HOURS;
 }
 
-// Post limits: non-member=2, member=5, lifetime=10
 export function lfgPostLimit(isLifetimeMember: boolean, isMember: boolean): number {
-  if (isLifetimeMember) return 10;
-  if (isMember) return 5;
-  return 2;
+  if (isLifetimeMember) return MEMBERSHIP.LIFETIME_LFG_LIMIT;
+  if (isMember) return MEMBERSHIP.PREMIUM_LFG_LIMIT;
+  return MEMBERSHIP.FREE_LFG_LIMIT;
 }
 
 export const lfgService = {

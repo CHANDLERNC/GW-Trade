@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { GZW, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { authService } from '@/services/auth.service';
+import { supabase } from '@/lib/supabase';
 
 function validate(username: string, email: string, password: string): string | null {
   if (!username.trim()) return 'Username is required.';
@@ -35,7 +36,14 @@ export default function SignUpScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const [ageGateChecked, setAgeGateChecked] = useState(false);
+  const [tosChecked, setTosChecked] = useState(false);
+  const [traderClauseChecked, setTraderClauseChecked] = useState(false);
+
+  const canSubmit = ageGateChecked && tosChecked && traderClauseChecked;
+
   const handleSignUp = async () => {
+    if (!canSubmit) return;
     const validationError = validate(username, email, password);
     if (validationError) {
       setError(validationError);
@@ -43,7 +51,7 @@ export default function SignUpScreen() {
     }
     setLoading(true);
     setError(null);
-    const { error } = await authService.signUp(
+    const { data, error } = await authService.signUp(
       email.trim().toLowerCase(),
       password,
       username.trim()
@@ -51,6 +59,15 @@ export default function SignUpScreen() {
     if (error) {
       setError(error.message);
     } else {
+      if (data?.user) {
+        const userId = data.user.id;
+        const rows = [
+          { user_id: userId, agreement_type: 'age_gate', version: '1' },
+          { user_id: userId, agreement_type: 'tos', version: '1' },
+          { user_id: userId, agreement_type: 'verified_trader_clause', version: '1' },
+        ];
+        await supabase.from('user_agreements').insert(rows);
+      }
       setSuccess(true);
     }
     setLoading(false);
@@ -134,10 +151,65 @@ export default function SignUpScreen() {
               textContentType="newPassword"
             />
 
+            <View style={styles.checkboxSection}>
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setAgeGateChecked(!ageGateChecked)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, ageGateChecked && styles.checkboxChecked]}>
+                  {ageGateChecked && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I am 13 or older.{' '}
+                  <Text style={styles.checkboxNote}>
+                    (You must be 18+ to make supporter purchases.)
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setTosChecked(!tosChecked)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, tosChecked && styles.checkboxChecked]}>
+                  {tosChecked && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I agree to the{' '}
+                  <Text style={styles.link} onPress={() => router.push('/legal/terms')}>
+                    Terms of Service
+                  </Text>{' '}
+                  and{' '}
+                  <Text style={styles.link} onPress={() => router.push('/legal/privacy')}>
+                    Privacy Policy
+                  </Text>
+                  .
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setTraderClauseChecked(!traderClauseChecked)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, traderClauseChecked && styles.checkboxChecked]}>
+                  {traderClauseChecked && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={styles.checkboxLabel}>
+                  I understand that Verified Trader status and all reputation on this platform are
+                  earned through completed trade milestones only and{' '}
+                  <Text style={styles.emphasis}>cannot be purchased under any circumstances</Text>.
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <Button
               title="Create Account"
               onPress={handleSignUp}
               loading={loading}
+              disabled={!canSubmit}
               fullWidth
               size="lg"
             />
@@ -182,6 +254,57 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   errorText: { fontSize: Typography.sizes.sm, color: GZW.danger },
+  checkboxSection: {
+    gap: Spacing.md,
+    paddingTop: Spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: GZW.surfaceBorder,
+    marginTop: Spacing.xs,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 2,
+    borderColor: GZW.surfaceBorder,
+    backgroundColor: GZW.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    flexShrink: 0,
+  },
+  checkboxChecked: {
+    backgroundColor: GZW.accent,
+    borderColor: GZW.accent,
+  },
+  checkmark: {
+    fontSize: 13,
+    color: GZW.background,
+    fontWeight: Typography.weights.bold,
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: Typography.sizes.sm,
+    color: GZW.textSecondary,
+    lineHeight: 20,
+  },
+  checkboxNote: {
+    color: GZW.textMuted,
+    fontSize: Typography.sizes.xs,
+  },
+  emphasis: {
+    color: GZW.text,
+    fontWeight: Typography.weights.semibold,
+  },
+  link: {
+    color: GZW.accent,
+    textDecorationLine: 'underline',
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

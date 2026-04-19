@@ -343,6 +343,26 @@ export default function ProfileScreen() {
         <View style={styles.signOutSection}>
           {profile?.is_admin && (
             <>
+              <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/players')} activeOpacity={0.75}>
+                <Ionicons name="people" size={18} color={colors.accent} />
+                <Text style={styles.adminBtnText}>Admin · Players</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/reports')} activeOpacity={0.75}>
+                <Ionicons name="flag" size={18} color={colors.accent} />
+                <Text style={styles.adminBtnText}>Admin · Player Reports</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/listings')} activeOpacity={0.75}>
+                <Ionicons name="list" size={18} color={colors.accent} />
+                <Text style={styles.adminBtnText}>Admin · All Listings</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/lfg')} activeOpacity={0.75}>
+                <Ionicons name="game-controller" size={18} color={colors.accent} />
+                <Text style={styles.adminBtnText}>Admin · LFG Posts</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin/tickets')} activeOpacity={0.75}>
                 <Ionicons name="shield-checkmark" size={18} color={colors.accent} />
                 <Text style={styles.adminBtnText}>Admin · Support Tickets</Text>
@@ -355,6 +375,11 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </>
           )}
+          <TouchableOpacity style={styles.supportBtn} onPress={() => router.push('/settings/account-standing')} activeOpacity={0.75}>
+            <Ionicons name="shield-outline" size={18} color={colors.textSecondary} />
+            <Text style={styles.supportBtnText}>Account Standing</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.supportBtn} onPress={() => setSupportModalVisible(true)} activeOpacity={0.75}>
             <Ionicons name="headset-outline" size={18} color={colors.textSecondary} />
             <Text style={styles.supportBtnText}>Contact Support</Text>

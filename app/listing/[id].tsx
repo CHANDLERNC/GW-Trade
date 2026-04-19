@@ -27,6 +27,7 @@ import { useComments } from '@/hooks/useComments';
 import { listingsService } from '@/services/listings.service';
 import { messagesService } from '@/services/messages.service';
 import { priceHistoryService } from '@/services/priceHistory.service';
+import { safetyService } from '@/services/safety.service';
 import { useAuth } from '@/context/AuthContext';
 import { FACTIONS } from '@/constants/factions';
 import { timeAgo } from '@/utils/dateFormat';
@@ -77,19 +78,17 @@ export default function ListingDetailScreen() {
     if (!listing) return;
     navigation.setOptions({
       headerTitle: listing.title,
-      headerRight: isOwner
-        ? () => (
-            <TouchableOpacity
-              onPress={showOwnerMenu}
-              style={styles.headerMenuBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="ellipsis-horizontal" size={22} color={colors.text} />
-            </TouchableOpacity>
-          )
-        : undefined,
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={isOwner ? showOwnerMenu : showReportMenu}
+          style={styles.headerMenuBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="ellipsis-horizontal" size={22} color={colors.text} />
+        </TouchableOpacity>
+      ),
     });
-  }, [listing, navigation, isOwner, colors]);
+  }, [listing, navigation, isOwner, colors, showReportMenu]);
 
   const handleContact = async () => {
     if (!user || !listing) return;
@@ -145,6 +144,27 @@ export default function ListingDetailScreen() {
       Alert.alert('Marked as Sold', 'Your listing has been closed and the sale recorded.', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/profile') },
       ]);
+    }
+  };
+
+  const showReportMenu = useCallback(() => {
+    if (!listing) return;
+    Alert.alert('Report Listing', 'Why are you reporting this listing?', [
+      { text: 'Scam / Fraud', onPress: () => submitListingReport('scam') },
+      { text: 'Spam', onPress: () => submitListingReport('spam') },
+      { text: 'Inappropriate', onPress: () => submitListingReport('inappropriate') },
+      { text: 'Other', onPress: () => submitListingReport('other') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [listing]);
+
+  const submitListingReport = async (reason: 'scam' | 'harassment' | 'spam' | 'inappropriate' | 'other') => {
+    if (!listing) return;
+    const { error } = await safetyService.reportUser(listing.user_id, reason, undefined, listing.id) as any;
+    if (error?.code === '23505') {
+      Alert.alert('Already Reported', 'You have already reported this listing.');
+    } else if (!error) {
+      Alert.alert('Report Submitted', 'Thank you. Our team will review this listing within 48 hours.');
     }
   };
 

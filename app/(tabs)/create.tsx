@@ -23,6 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { CATEGORY_LIST } from '@/constants/categories';
 import { FACTION_LIST } from '@/constants/factions';
 import { MembershipModal } from '@/components/ui/MembershipModal';
+import { LimitReachedModal } from '@/components/ui/LimitReachedModal';
 import { Category, FactionSlug } from '@/types';
 import { GZWKey } from '@/constants/gzwKeys';
 
@@ -42,6 +43,7 @@ export default function CreateScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [membershipModalVisible, setMembershipModalVisible] = useState(false);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
   const [currentListingCount, setCurrentListingCount] = useState(0);
 
   const isKeyCategory = category === 'keys';
@@ -99,7 +101,7 @@ export default function CreateScreen() {
       if (error.message.startsWith('LIMIT_REACHED')) {
         const count = await listingsService.getActiveListingCount(user.id);
         setCurrentListingCount(count);
-        setMembershipModalVisible(true);
+        setLimitModalVisible(true);
       } else {
         Alert.alert('Error', error.message);
       }
@@ -293,6 +295,12 @@ export default function CreateScreen() {
         onClose={() => setKeySelectorVisible(false)}
       />
 
+      <LimitReachedModal
+        visible={limitModalVisible}
+        limitType="listing"
+        onClose={() => setLimitModalVisible(false)}
+        onViewPlans={() => { setLimitModalVisible(false); setMembershipModalVisible(true); }}
+      />
       <MembershipModal
         visible={membershipModalVisible}
         onClose={() => setMembershipModalVisible(false)}

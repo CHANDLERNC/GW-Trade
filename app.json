@@ -2,7 +2,7 @@
   "expo": {
     "name": "GZW Market",
     "slug": "gzw-market",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gzwmarket",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gzwmarket.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "GZW Market uses your camera to upload listing photos.",
         "NSPhotoLibraryUsageDescription": "GZW Market accesses your photo library to upload listing photos.",
@@ -30,6 +30,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -71,6 +72,12 @@
         "projectId": "f050de5e-41e9-4106-81e1-87622ebd15e7"
       }
     },
-    "owner": "chandlernic"
+    "owner": "chandlernic",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f050de5e-41e9-4106-81e1-87622ebd15e7"
+    }
   }
 }

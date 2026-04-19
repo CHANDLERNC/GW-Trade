@@ -49,6 +49,8 @@ export interface Profile {
   ratings_positive: number;
   ratings_negative: number;
   is_admin: boolean;
+  strikes: number;
+  onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -168,7 +170,13 @@ export interface Report {
   listing_id: string | null;
   reason: 'scam' | 'harassment' | 'spam' | 'inappropriate' | 'other';
   details: string | null;
+  status: 'open' | 'triaged' | 'actioned' | 'dismissed';
+  resolved_at: string | null;
+  resolver_id: string | null;
+  resolution_note: string | null;
   created_at: string;
+  reporter?: { username: string; display_name: string | null } | null;
+  reported_user?: { username: string; display_name: string | null } | null;
 }
 
 export interface PriceHistoryEntry {
