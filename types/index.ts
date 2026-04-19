@@ -42,6 +42,7 @@ export interface Profile {
   early_adopter_discount_claimed: boolean;
   early_adopter_discount_expires_at: string | null;
   display_name_color: string | null;
+  equipped_badge_id: string | null;
   member_since: string | null;
   member_expires_at: string | null;
   trades_completed: number;

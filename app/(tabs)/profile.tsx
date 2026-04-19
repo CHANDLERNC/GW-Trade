@@ -31,6 +31,7 @@ import { MemberIcon } from '@/components/ui/MemberIcon';
 import { FACTION_LIST } from '@/constants/factions';
 import { MEMBERSHIP } from '@/constants/membership';
 import { NAME_COLORS, resolveNameColor } from '@/constants/nameColors';
+import { BADGES, BADGE_CATEGORY_LABELS, getEquippedBadge, getAutoRankBadge, BadgeProfile } from '@/constants/badges';
 import { FactionSlug } from '@/types';
 
 export default function ProfileScreen() {
@@ -50,7 +51,22 @@ export default function ProfileScreen() {
   const [editBio, setEditBio] = useState('');
   const [editFaction, setEditFaction] = useState<FactionSlug | null>(null);
   const [editNameColor, setEditNameColor] = useState<string | null>(null);
+  const [editBadgeId, setEditBadgeId] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+
+  const badgeProfile: BadgeProfile = useMemo(() => ({
+    trades_completed:  profile?.trades_completed  ?? 0,
+    ratings_positive:  profile?.ratings_positive  ?? 0,
+    ratings_negative:  profile?.ratings_negative  ?? 0,
+    is_early_adopter:  profile?.is_early_adopter  ?? false,
+    is_member:         profile?.is_member         ?? false,
+    is_lifetime_member: profile?.is_lifetime_member ?? false,
+  }), [profile]);
+
+  const equippedBadge = useMemo(
+    () => getEquippedBadge({ ...badgeProfile, equipped_badge_id: profile?.equipped_badge_id }),
+    [badgeProfile, profile?.equipped_badge_id]
+  );
 
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
 
@@ -67,6 +83,7 @@ export default function ProfileScreen() {
     setEditBio(profile.bio ?? '');
     setEditFaction(profile.faction_preference ?? null);
     setEditNameColor(profile.display_name_color ?? null);
+    setEditBadgeId(profile.equipped_badge_id ?? null);
     setEditError(null);
     setEditModalVisible(true);
   };
@@ -79,6 +96,7 @@ export default function ProfileScreen() {
       bio: editBio.trim() || null,
       faction_preference: editFaction,
       display_name_color: editNameColor,
+      equipped_badge_id: editBadgeId,
     });
     if (error) {
       setEditError(error.message);
@@ -162,6 +180,12 @@ export default function ProfileScreen() {
                 />
               </View>
               <Text style={styles.username} numberOfLines={1}>@{profile?.username}</Text>
+              <View style={[styles.profileBadgeRow, { borderColor: equippedBadge.color + '44' }]}>
+                <Ionicons name={equippedBadge.icon as any} size={12} color={equippedBadge.color} />
+                <Text style={[styles.profileBadgeText, { color: equippedBadge.color }]}>
+                  {equippedBadge.label}
+                </Text>
+              </View>
             </View>
             <View style={styles.headerBtns}>
               <TouchableOpacity style={styles.editBtn} onPress={openEditModal} activeOpacity={0.75}>
@@ -244,23 +268,23 @@ export default function ProfileScreen() {
             <View style={styles.memberRow}>
               <View style={styles.memberBadge}>
                 <Ionicons name="infinite" size={16} color="#FFD700" />
-                <Text style={[styles.memberBadgeText, styles.lifetimeBadgeText]}>Lifetime Member</Text>
+                <Text style={[styles.memberBadgeText, styles.lifetimeBadgeText]}>Lifetime Supporter</Text>
               </View>
               <Text style={styles.memberLimit}>
                 {listings.filter((l) => l.is_active).length} / {MEMBERSHIP.LIFETIME_LIMIT} listings
               </Text>
             </View>
-            <Text style={styles.lifetimeNote}>2-week post duration · never expires</Text>
+            <Text style={styles.lifetimeNote}>48-hour posts · never expires</Text>
           </View>
         ) : profile?.is_member ? (
           <View style={styles.membershipCard}>
             <View style={styles.memberRow}>
               <View style={styles.memberBadge}>
                 <Ionicons name="shield-checkmark" size={16} color={colors.accent} />
-                <Text style={styles.memberBadgeText}>GZW Member</Text>
+                <Text style={styles.memberBadgeText}>Supporter</Text>
               </View>
               <Text style={styles.memberLimit}>
-                {listings.filter((l) => l.is_active).length} / {MEMBERSHIP.MEMBER_LIMIT} listings
+                {listings.filter((l) => l.is_active).length} / {MEMBERSHIP.PREMIUM_LIMIT} listings
               </Text>
             </View>
           </View>
@@ -270,7 +294,7 @@ export default function ProfileScreen() {
               <View style={styles.upgradeLeft}>
                 <Ionicons name="shield-outline" size={18} color={colors.accent} />
                 <View>
-                  <Text style={styles.upgradeTitle}>Upgrade to Member</Text>
+                  <Text style={styles.upgradeTitle}>Become a Supporter</Text>
                   <Text style={styles.upgradeSubtitle}>
                     {listings.filter((l) => l.is_active).length} / {MEMBERSHIP.FREE_LIMIT} listings used · from $1.99/mo
                   </Text>
@@ -358,6 +382,39 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={styles.moreItem}
               activeOpacity={0.75}
+              onPress={() => { setMoreMenuVisible(false); router.push('/about'); }}
+            >
+              <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.moreItemText}>About GZW Market</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.moreItem}
+              activeOpacity={0.75}
+              onPress={() => { setMoreMenuVisible(false); router.push('/legal/terms'); }}
+            >
+              <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.moreItemText}>Terms of Service</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.moreItem}
+              activeOpacity={0.75}
+              onPress={() => { setMoreMenuVisible(false); router.push('/legal/privacy'); }}
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.moreItemText}>Privacy Policy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.moreItem}
+              activeOpacity={0.75}
+              onPress={() => { setMoreMenuVisible(false); router.push('/settings/delete-data'); }}
+            >
+              <Ionicons name="person-remove-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.moreItemText}>Delete My Data</Text>
+            </TouchableOpacity>
+            <View style={styles.moreDivider} />
+            <TouchableOpacity
+              style={styles.moreItemDanger}
+              activeOpacity={0.75}
               onPress={() => {
                 setMoreMenuVisible(false);
                 handleDeleteAccount();
@@ -414,30 +471,77 @@ export default function ProfileScreen() {
               <Input label="Display Name" value={editDisplayName} onChangeText={setEditDisplayName} placeholder="Optional display name" maxLength={30} />
               <Input label="Bio" value={editBio} onChangeText={setEditBio} placeholder="A few words about yourself..." multiline numberOfLines={3} style={styles.multiline} />
 
+              {/* ── Badge picker ─────────────────────────────────────────── */}
+              <View>
+                <Text style={styles.factionSectionLabel}>BADGE</Text>
+                {(['rank', 'community', 'supporter'] as const).map((cat) => {
+                  const catBadges = BADGES.filter((b) => b.category === cat);
+                  return (
+                    <View key={cat} style={styles.badgeCategoryGroup}>
+                      <Text style={styles.badgeCategoryLabel}>{BADGE_CATEGORY_LABELS[cat]}</Text>
+                      <View style={styles.badgeGrid}>
+                        {catBadges.map((badge) => {
+                          const locked = badge.isLocked(badgeProfile);
+                          const autoId = getAutoRankBadge(badgeProfile).id;
+                          const selected = editBadgeId === badge.id || (editBadgeId === null && badge.id === autoId);
+                          return (
+                            <TouchableOpacity
+                              key={badge.id}
+                              style={[
+                                styles.badgeChip,
+                                { borderColor: locked ? colors.surfaceBorder : badge.color + '44' },
+                                selected && { borderColor: badge.color, backgroundColor: badge.color + '15' },
+                                locked && { opacity: 0.4 },
+                              ]}
+                              onPress={() =>
+                                locked
+                                  ? Alert.alert('Locked', badge.unlockHint)
+                                  : setEditBadgeId(badge.id)
+                              }
+                              activeOpacity={0.75}
+                            >
+                              <Ionicons name={badge.icon as any} size={14} color={locked ? colors.textMuted : badge.color} />
+                              <Text style={[styles.badgeChipLabel, { color: locked ? colors.textMuted : badge.color }]}>
+                                {badge.label}
+                              </Text>
+                              {locked && <Ionicons name="lock-closed" size={10} color={colors.textMuted} />}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* ── Name color picker ─────────────────────────────────────── */}
               <View>
                 <Text style={styles.factionSectionLabel}>NAME COLOR</Text>
-                {(profile?.is_member || profile?.is_lifetime_member) ? (
-                  <View style={styles.colorPickerRow}>
-                    {NAME_COLORS.map((c) => {
-                      const active = (editNameColor ?? '#E8EAF0') === c.hex;
-                      return (
-                        <TouchableOpacity
-                          key={c.id}
-                          style={[styles.colorSwatch, { backgroundColor: c.hex }, active && styles.colorSwatchActive]}
-                          onPress={() => setEditNameColor(c.id === 'default' ? null : c.hex)}
-                          activeOpacity={0.8}
-                        >
-                          {active && <Ionicons name="checkmark" size={14} color={colors.background} />}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <TouchableOpacity style={styles.colorLockedRow} onPress={() => setMembershipModalVisible(true)} activeOpacity={0.8}>
-                    <Ionicons name="lock-closed" size={14} color={colors.textMuted} />
-                    <Text style={styles.colorLockedText}>Member exclusive — tap to upgrade</Text>
-                  </TouchableOpacity>
-                )}
+                <View style={styles.colorPickerRow}>
+                  {NAME_COLORS.map((c) => {
+                    const locked = c.isLocked(profile?.trades_completed ?? 0);
+                    const active = (editNameColor ?? '#E8EAF0') === c.hex;
+                    return (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={[
+                          styles.colorSwatch,
+                          { backgroundColor: c.hex },
+                          active && styles.colorSwatchActive,
+                        ]}
+                        onPress={() =>
+                          locked
+                            ? Alert.alert('Locked', c.unlockHint)
+                            : setEditNameColor(c.id === 'default' ? null : c.hex)
+                        }
+                        activeOpacity={0.8}
+                      >
+                        {active && !locked && <Ionicons name="checkmark" size={14} color={colors.background} />}
+                        {locked && <Ionicons name="lock-closed" size={12} color="#ffffff88" />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
 
               <Text style={styles.factionSectionLabel}>FACTION</Text>
@@ -619,15 +723,25 @@ function createStyles(c: ThemeColors) {
     errorText: { fontSize: Typography.sizes.sm, color: c.danger },
     multiline: { height: 80, textAlignVertical: 'top', paddingTop: Spacing.sm },
     factionSectionLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold, color: c.textMuted, letterSpacing: 1.5, marginTop: Spacing.xs, marginBottom: Spacing.sm },
+    profileBadgeRow: {
+      flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start',
+      borderWidth: 1, borderRadius: BorderRadius.sm,
+      paddingHorizontal: 6, paddingVertical: 2, marginTop: 2,
+    },
+    profileBadgeText: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold },
+    badgeCategoryGroup: { marginBottom: Spacing.sm },
+    badgeCategoryLabel: { fontSize: Typography.sizes.xs, color: c.textMuted, marginBottom: Spacing.xs, letterSpacing: 0.5 },
+    badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    badgeChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 5,
+      borderWidth: 1, borderRadius: BorderRadius.md,
+      paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs,
+      backgroundColor: c.surface,
+    },
+    badgeChipLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold },
     colorPickerRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
     colorSwatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent' },
     colorSwatchActive: { borderColor: c.text },
-    colorLockedRow: {
-      flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-      backgroundColor: c.surfaceElevated, borderRadius: BorderRadius.md,
-      borderWidth: 1, borderColor: c.surfaceBorder, borderStyle: 'dashed', padding: Spacing.md,
-    },
-    colorLockedText: { fontSize: Typography.sizes.sm, color: c.textMuted },
     factionOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
     factionOption: {
       flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
@@ -653,10 +767,18 @@ function createStyles(c: ThemeColors) {
     moreItem: {
       flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
       paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
+      backgroundColor: c.surfaceElevated, borderRadius: BorderRadius.md,
+      borderWidth: 1, borderColor: c.surfaceBorder,
+    },
+    moreItemDanger: {
+      flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+      paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
       backgroundColor: c.danger + '12', borderRadius: BorderRadius.md,
       borderWidth: 1, borderColor: c.danger + '33',
     },
+    moreItemText: { fontSize: Typography.sizes.md, color: c.text, fontWeight: Typography.weights.medium },
     moreItemTextDanger: { fontSize: Typography.sizes.md, color: c.danger, fontWeight: Typography.weights.semibold },
+    moreDivider: { height: 1, backgroundColor: c.surfaceBorder, marginVertical: Spacing.xs },
     moreCancelBtn: {
       alignItems: 'center', paddingVertical: Spacing.md,
       backgroundColor: c.surfaceElevated, borderRadius: BorderRadius.md,

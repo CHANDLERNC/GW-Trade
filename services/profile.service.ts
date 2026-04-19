@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { Profile, FactionSlug } from '@/types';
 
 type ProfileUpdates = Partial<
-  Pick<Profile, 'username' | 'display_name' | 'bio' | 'faction_preference' | 'avatar_url' | 'display_name_color'>
+  Pick<Profile, 'username' | 'display_name' | 'bio' | 'faction_preference' | 'avatar_url' | 'display_name_color' | 'equipped_badge_id'>
 >;
 
 export const profileService = {

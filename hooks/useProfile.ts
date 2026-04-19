@@ -4,7 +4,7 @@ import { Profile } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
 type ProfileUpdates = Partial<
-  Pick<Profile, 'username' | 'display_name' | 'bio' | 'faction_preference' | 'display_name_color'>
+  Pick<Profile, 'username' | 'display_name' | 'bio' | 'faction_preference' | 'display_name_color' | 'equipped_badge_id'>
 >;
 
 export function useProfile() {
