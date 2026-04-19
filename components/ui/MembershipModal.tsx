@@ -14,9 +14,109 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { GZW, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { MEMBERSHIP, PLANS, EARLY_ACCESS_END, MONETIZATION_ENABLED } from '@/constants/membership';
 import { membershipService } from '@/services/membership.service';
+import type { PlanId } from '@/constants/membership';
 
-const LIFETIME_COLOR = '#FFD700';
-const EARLY_COLOR   = '#9C27B0';
+const EARLY_COLOR = '#9C27B0';
+
+type TierId = 'free' | 'monthly' | 'yearly' | 'lifetime';
+
+const TIER_COLORS: Record<TierId, string> = {
+  free:     '#4A90D9',
+  monthly:  GZW.accent,
+  yearly:   '#52B788',
+  lifetime: '#FFD700',
+};
+
+const TABS: { id: TierId; label: string }[] = [
+  { id: 'free',     label: 'Community' },
+  { id: 'monthly',  label: 'Monthly'   },
+  { id: 'yearly',   label: 'Yearly'    },
+  { id: 'lifetime', label: 'Lifetime'  },
+];
+
+const TIER_DATA: Record<TierId, {
+  icon: 'people' | 'shield-checkmark' | 'infinite';
+  price: string;
+  priceNote: string;
+  headline: string;
+  subline: string;
+  perks: string[];
+  badge?: string;
+  planId: PlanId | null;
+  earlyAdopterDiscount?: string;
+}> = {
+  free: {
+    icon: 'people',
+    price: 'Free',
+    priceNote: 'always and forever',
+    headline: "You're already in.",
+    subline:
+      "Every feature in GZW Market is fully unlocked for all users — no paywalls, no locked tools, no ads. Supporters simply chip in to help cover hosting costs and get a bit more room in return.",
+    perks: [
+      `${MEMBERSHIP.FREE_LIMIT} active listings`,
+      `${MEMBERSHIP.FREE_POST_HOURS}-hour listing & LFG duration`,
+      `${MEMBERSHIP.FREE_MESSAGES_PER_DAY} messages/day`,
+      `${MEMBERSHIP.FREE_LFG_LIMIT} active LFG posts`,
+      'Full access to trading tools — browse, save, message, LFG',
+      'No ads — ever',
+    ],
+    planId: null,
+  },
+  monthly: {
+    icon: 'shield-checkmark',
+    price: PLANS.monthly.price,
+    priceNote: PLANS.monthly.note,
+    headline: 'Same tools, more headroom.',
+    subline:
+      'Your contribution goes 100% toward keeping the servers on. In return you get higher limits across the board.',
+    perks: [
+      `${MEMBERSHIP.PREMIUM_LIMIT} active listings`,
+      `${MEMBERSHIP.PREMIUM_POST_HOURS}-hour listing & LFG duration`,
+      `${MEMBERSHIP.PREMIUM_MESSAGES_PER_DAY} messages/day`,
+      `${MEMBERSHIP.PREMIUM_LFG_LIMIT} active LFG posts`,
+      'Supporter badge on your profile',
+    ],
+    planId: 'monthly',
+    earlyAdopterDiscount: PLANS.monthly.earlyAdopterDiscount,
+  },
+  yearly: {
+    icon: 'shield-checkmark',
+    price: PLANS.yearly.price,
+    priceNote: PLANS.yearly.note,
+    badge: 'BEST VALUE',
+    headline: 'In it for the long run.',
+    subline:
+      'Lock in a full year of higher limits at a fraction of the monthly cost. Cancel anytime — no questions asked.',
+    perks: [
+      `${MEMBERSHIP.PREMIUM_LIMIT} active listings`,
+      `${MEMBERSHIP.PREMIUM_POST_HOURS}-hour listing & LFG duration`,
+      `${MEMBERSHIP.PREMIUM_MESSAGES_PER_DAY} messages/day`,
+      `${MEMBERSHIP.PREMIUM_LFG_LIMIT} active LFG posts`,
+      'Supporter badge on your profile',
+      'Save 37% vs monthly',
+    ],
+    planId: 'yearly',
+    earlyAdopterDiscount: PLANS.yearly.earlyAdopterDiscount,
+  },
+  lifetime: {
+    icon: 'infinite',
+    price: PLANS.lifetime_discounted.price,
+    priceNote: PLANS.lifetime_discounted.note,
+    badge: 'LAUNCH PRICE',
+    headline: 'Pay once. Here forever.',
+    subline:
+      'One contribution keeps you supported for life — the highest limits available, and you never see another charge.',
+    perks: [
+      `${MEMBERSHIP.LIFETIME_LIMIT} active listings`,
+      `${MEMBERSHIP.LIFETIME_POST_HOURS}-hour listing & LFG duration`,
+      'Unlimited messages',
+      `${MEMBERSHIP.LIFETIME_LFG_LIMIT} active LFG posts`,
+      'Exclusive gold Supporter badge',
+      'Pay once — never again',
+    ],
+    planId: 'lifetime_discounted',
+  },
+};
 
 function getTimeLeft(): { days: number; hours: number; expired: boolean } {
   const diff = EARLY_ACCESS_END.getTime() - Date.now();
@@ -24,61 +124,6 @@ function getTimeLeft(): { days: number; hours: number; expired: boolean } {
   const totalHours = Math.floor(diff / 3_600_000);
   return { days: Math.floor(totalHours / 24), hours: totalHours % 24, expired: false };
 }
-
-const DISPLAY_PLANS = [
-  {
-    id: 'monthly' as const,
-    icon: 'shield-checkmark' as const,
-    label: PLANS.monthly.label,
-    color: GZW.accent,
-    price: PLANS.monthly.price,
-    priceNote: PLANS.monthly.note,
-    badge: PLANS.monthly.badge,
-    perks: [
-      `${MEMBERSHIP.PREMIUM_LIMIT} active listings`,
-      '72-hour listing duration',
-      'Priority ranking in browse',
-      'Unlimited messages',
-      'Member badge on profile',
-    ],
-    earlyAdopterDiscount: PLANS.monthly.earlyAdopterDiscount,
-  },
-  {
-    id: 'yearly' as const,
-    icon: 'shield-checkmark' as const,
-    label: PLANS.yearly.label,
-    color: GZW.accent,
-    price: PLANS.yearly.price,
-    priceNote: PLANS.yearly.note,
-    badge: PLANS.yearly.badge,
-    perks: [
-      `${MEMBERSHIP.PREMIUM_LIMIT} active listings`,
-      '72-hour listing duration',
-      'Priority ranking in browse',
-      'Unlimited messages',
-      'Member badge on profile',
-    ],
-    earlyAdopterDiscount: PLANS.yearly.earlyAdopterDiscount,
-  },
-  {
-    id: 'lifetime_discounted' as const,
-    icon: 'infinite' as const,
-    label: PLANS.lifetime_discounted.label,
-    color: LIFETIME_COLOR,
-    price: PLANS.lifetime_discounted.price,
-    priceNote: PLANS.lifetime_discounted.note,
-    badge: PLANS.lifetime_discounted.badge,
-    perks: [
-      `${MEMBERSHIP.LIFETIME_LIMIT} active listings`,
-      '14-day listing duration',
-      'Highest priority in browse',
-      'Unlimited messages',
-      'Exclusive gold Lifetime badge',
-      'Pay once — never again',
-    ],
-    earlyAdopterDiscount: undefined,
-  },
-];
 
 interface Props {
   visible: boolean;
@@ -100,9 +145,14 @@ export function MembershipModal({
   onClaimed,
 }: Props) {
   const [claiming, setClaiming] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<TierId>('free');
+
   const limit = isMember ? MEMBERSHIP.PREMIUM_LIMIT : MEMBERSHIP.FREE_LIMIT;
   const timeLeft = getTimeLeft();
   const showEarlyAccess = !earlyAccessClaimed && !timeLeft.expired;
+
+  const tier = TIER_DATA[selectedTier];
+  const color = TIER_COLORS[selectedTier];
 
   const handleClaim = async () => {
     setClaiming(true);
@@ -112,7 +162,7 @@ export function MembershipModal({
       onClaimed();
       Alert.alert(
         'Welcome, Founder!',
-        "You've claimed 30 days of Premium access and earned your permanent Early Adopter badge. Thank you for believing in us from the start.",
+        "You've claimed 30 days of Supporter access and earned your permanent Early Adopter badge. Thank you for believing in us from the start.",
         [{ text: "Let's go!", onPress: onClose }]
       );
     } else {
@@ -139,26 +189,31 @@ export function MembershipModal({
             </TouchableOpacity>
           </View>
 
-          {/* Icon */}
-          <View style={styles.badgeWrap}>
-            <View style={styles.badge}>
+          {/* Hero */}
+          <View style={styles.hero}>
+            <View style={styles.heroIcon}>
               <Ionicons name="shield" size={36} color={GZW.accent} />
             </View>
+            <Text style={styles.title}>Support GZW Market</Text>
+            {!isMember && (
+              <Text style={styles.limitMsg}>
+                {currentCount} of {limit} free listings used
+              </Text>
+            )}
+            <Text style={styles.subtitle}>
+              Help keep the servers running. 100% of supporter funds go toward hosting costs.
+            </Text>
           </View>
 
-          <Text style={styles.title}>GZW Market Premium</Text>
-
-          {!isMember && (
-            <Text style={styles.limitMsg}>
-              You've used {currentCount} of your {limit} free listings.
+          {/* Trust note */}
+          <View style={styles.trustNote}>
+            <Ionicons name="checkmark-circle" size={15} color={GZW.accent} />
+            <Text style={styles.trustNoteText}>
+              All features are free for every user. Supporters get higher limits — nothing is locked behind a paywall.
             </Text>
-          )}
+          </View>
 
-          <Text style={styles.subtitle}>
-            Unlock more listings and support the marketplace.
-          </Text>
-
-          {/* ── Early Access Banner ───────────────────────────────────────── */}
+          {/* ── Early Access Banner ─────────────────────────────────────────── */}
           {showEarlyAccess && (
             <View style={styles.earlyCard}>
               <View style={styles.earlyHeader}>
@@ -175,9 +230,9 @@ export function MembershipModal({
 
               <View style={styles.earlyPerks}>
                 {[
-                  { icon: 'checkmark-circle' as const, text: '30 days of Premium access — completely free' },
+                  { icon: 'checkmark-circle' as const, text: '30 days of Supporter access — completely free' },
                   { icon: 'ribbon' as const,           text: 'Permanent Early Adopter badge on your profile & listings' },
-                  { icon: 'pricetag' as const,         text: '15% off your first paid subscription when we launch' },
+                  { icon: 'pricetag' as const,         text: '15% off your first paid subscription at launch' },
                   { icon: 'people' as const,           text: 'Recognition as a founding member of GZW Market' },
                 ].map(({ icon, text }) => (
                   <View key={text} style={styles.earlyPerkRow}>
@@ -239,62 +294,85 @@ export function MembershipModal({
             </View>
           )}
 
-          {/* ── Plan cards ─────────────────────────────────────────────────── */}
-          {DISPLAY_PLANS.map((plan) => (
-            <View key={plan.id} style={[styles.planCard, { borderColor: plan.color + '44' }]}>
-              <View style={styles.planHeader}>
-                <View style={[styles.planIconWrap, { backgroundColor: plan.color + '18' }]}>
-                  <Ionicons name={plan.icon} size={18} color={plan.color} />
-                </View>
-                <View style={styles.planTitleWrap}>
-                  <Text style={[styles.planLabel, { color: plan.color }]}>{plan.label}</Text>
-                  {plan.badge && (
-                    <View style={[styles.planBadge, { backgroundColor: plan.color + '22' }]}>
-                      <Text style={[styles.planBadgeText, { color: plan.color }]}>{plan.badge}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.planPrice, { color: plan.color }]}>{plan.price}</Text>
+          {/* ── Tier tabs ────────────────────────────────────────────────────── */}
+          <View style={styles.tabRow}>
+            {TABS.map((tab) => {
+              const isActive = selectedTier === tab.id;
+              const tabColor = TIER_COLORS[tab.id];
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  style={[styles.tab, isActive && { borderBottomColor: tabColor, borderBottomWidth: 2 }]}
+                  onPress={() => setSelectedTier(tab.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tabLabel, { color: isActive ? tabColor : GZW.textMuted }]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* ── Plan card ────────────────────────────────────────────────────── */}
+          <View style={[styles.planCard, { borderColor: color + '55' }]}>
+            <View style={styles.planHeader}>
+              <View style={[styles.planIconWrap, { backgroundColor: color + '18' }]}>
+                <Ionicons name={tier.icon} size={20} color={color} />
               </View>
-
-              <Text style={styles.planPriceNote}>{plan.priceNote}</Text>
-
-              <View style={styles.planPerks}>
-                {plan.perks.map((perk) => (
-                  <View key={perk} style={styles.perkRow}>
-                    <Ionicons name="checkmark" size={14} color={plan.color} />
-                    <Text style={styles.perkText}>{perk}</Text>
+              <View style={styles.planTitleWrap}>
+                <Text style={[styles.planPrice, { color }]}>{tier.price}</Text>
+                {tier.badge && (
+                  <View style={[styles.planBadge, { backgroundColor: color + '22' }]}>
+                    <Text style={[styles.planBadgeText, { color }]}>{tier.badge}</Text>
                   </View>
-                ))}
+                )}
               </View>
+            </View>
 
-              {plan.earlyAdopterDiscount !== undefined && isEarlyAdopter && (
-                <View style={styles.discountNote}>
-                  <Ionicons name="pricetag" size={13} color={EARLY_COLOR} />
-                  <Text style={styles.discountNoteText}>{plan.earlyAdopterDiscount} at launch</Text>
+            <Text style={[styles.planHeadline, { color }]}>{tier.headline}</Text>
+            <Text style={styles.planSubline}>{tier.subline}</Text>
+            <Text style={styles.planPriceNote}>{tier.priceNote}</Text>
+
+            <View style={styles.divider} />
+
+            <View style={styles.planPerks}>
+              {tier.perks.map((perk) => (
+                <View key={perk} style={styles.perkRow}>
+                  <Ionicons name="checkmark-circle" size={15} color={color} />
+                  <Text style={styles.perkText}>{perk}</Text>
                 </View>
-              )}
+              ))}
+            </View>
 
-              {MONETIZATION_ENABLED ? (
-                <TouchableOpacity style={[styles.purchaseBtn, { borderColor: plan.color }]}>
-                  <Text style={[styles.purchaseBtnText, { color: plan.color }]}>Subscribe</Text>
+            {tier.earlyAdopterDiscount !== undefined && isEarlyAdopter && (
+              <View style={styles.discountNote}>
+                <Ionicons name="pricetag" size={13} color={EARLY_COLOR} />
+                <Text style={styles.discountNoteText}>{tier.earlyAdopterDiscount} at launch</Text>
+              </View>
+            )}
+
+            {tier.planId && (
+              MONETIZATION_ENABLED ? (
+                <TouchableOpacity style={[styles.purchaseBtn, { borderColor: color, backgroundColor: color + '18' }]}>
+                  <Text style={[styles.purchaseBtnText, { color }]}>Subscribe</Text>
                 </TouchableOpacity>
               ) : (
                 <View style={styles.comingSoonBtn}>
                   <Ionicons name="time-outline" size={14} color={GZW.textMuted} />
                   <Text style={styles.comingSoonBtnText}>Coming Soon</Text>
                 </View>
-              )}
-            </View>
-          ))}
+              )
+            )}
+          </View>
 
-          {/* ── Launch notice ───────────────────────────────────────────────── */}
+          {/* ── Launch notice ─────────────────────────────────────────────────── */}
           <View style={styles.launchNotice}>
             <Ionicons name="information-circle-outline" size={20} color={GZW.accent} />
             <View style={styles.launchNoticeText}>
               <Text style={styles.launchNoticeTitle}>Subscriptions Launching Soon</Text>
               <Text style={styles.launchNoticeSub}>
-                In-app purchases are being configured. Claim Early Adopter access above to get 30 days of Premium free and lock in a 15% launch discount.
+                In-app purchases are being configured. Claim Early Adopter access above to get 30 days of Supporter access free and lock in a 15% launch discount.
               </Text>
             </View>
           </View>
@@ -313,8 +391,9 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg },
   header: { alignItems: 'flex-end', paddingTop: Spacing.sm },
   closeBtn: { padding: Spacing.sm },
-  badgeWrap: { alignItems: 'center', marginTop: Spacing.sm },
-  badge: {
+
+  hero: { alignItems: 'center', gap: Spacing.sm },
+  heroIcon: {
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -323,6 +402,7 @@ const styles = StyleSheet.create({
     borderColor: GZW.accent + '44',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: Spacing.xs,
   },
   title: {
     fontSize: Typography.sizes.xxl,
@@ -336,13 +416,29 @@ const styles = StyleSheet.create({
     color: GZW.warning,
     textAlign: 'center',
     fontWeight: Typography.weights.semibold,
-    marginTop: -Spacing.sm,
   },
   subtitle: {
     fontSize: Typography.sizes.md,
     color: GZW.textSecondary,
     textAlign: 'center',
-    marginTop: -Spacing.sm,
+  },
+
+  trustNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    backgroundColor: GZW.surface,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: GZW.surfaceBorder,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  trustNoteText: {
+    flex: 1,
+    fontSize: Typography.sizes.xs,
+    color: GZW.textMuted,
+    lineHeight: 18,
   },
 
   // ── Early Access ──────────────────────────────────────────────────────────
@@ -391,7 +487,6 @@ const styles = StyleSheet.create({
   claimBtnDisabled: { opacity: 0.6 },
   claimBtnText: { fontSize: Typography.sizes.md, fontWeight: Typography.weights.bold, color: '#fff' },
 
-  // ── Already a founder ─────────────────────────────────────────────────────
   founderCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -406,7 +501,25 @@ const styles = StyleSheet.create({
   founderTitle: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.bold, color: EARLY_COLOR },
   founderSub: { fontSize: Typography.sizes.xs, color: GZW.textSecondary, lineHeight: 18 },
 
-  // ── Plan cards ────────────────────────────────────────────────────────────
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  tabRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: GZW.surfaceBorder,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabLabel: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+  },
+
+  // ── Plan card ─────────────────────────────────────────────────────────────
   planCard: {
     backgroundColor: GZW.surface,
     borderRadius: BorderRadius.lg,
@@ -415,16 +528,24 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   planHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  planIconWrap: { width: 32, height: 32, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center' },
+  planIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   planTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  planLabel: { fontSize: Typography.sizes.md, fontWeight: Typography.weights.bold },
+  planPrice: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.heavy },
   planBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: BorderRadius.sm },
   planBadgeText: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.bold },
-  planPrice: { fontSize: Typography.sizes.md, fontWeight: Typography.weights.semibold },
-  planPriceNote: { fontSize: Typography.sizes.xs, color: GZW.textMuted, marginTop: -Spacing.xs },
+  planHeadline: { fontSize: Typography.sizes.lg, fontWeight: Typography.weights.bold },
+  planSubline: { fontSize: Typography.sizes.sm, color: GZW.textSecondary, lineHeight: 20 },
+  planPriceNote: { fontSize: Typography.sizes.xs, color: GZW.textMuted },
+  divider: { height: 1, backgroundColor: GZW.surfaceBorder },
   planPerks: { gap: Spacing.sm },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  perkText: { fontSize: Typography.sizes.sm, color: GZW.textSecondary, flex: 1 },
+  perkText: { fontSize: Typography.sizes.sm, color: GZW.text, flex: 1 },
   discountNote: {
     flexDirection: 'row',
     alignItems: 'center',
